@@ -26,15 +26,28 @@ def login(api_key: str):
 def prompt(req: str) -> str:
     """Send gemini a prompt and return the response.
 
-    TODO use async and streaming
+    TODO use async
     """
 
     res = gemini_model.generate_content(
         contents=req,
-        stream=False,
+        stream=True,
         generation_config=None
     )
 
     logger.debug(f'received reply from gemini')
-    return res.text
+    out_str = ''
+    c_idx = 0
+    for res_chunk in res:
+        logger.debug(f'fetch gemini reply part-{c_idx}')
+        try:
+            out_str += res_chunk.text
+            c_idx += 1
+        except ValueError as e:
+            logger.error(f'failed to fetch gemini response part-{c_idx}. {e}')
+            out_str += ' <fetch-error-eof>'
+            break
+    # end for
+
+    return out_str
 # end def

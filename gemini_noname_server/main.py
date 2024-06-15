@@ -93,7 +93,8 @@ def main():
     gemini_client.login(gemini_api_key)
 
     req = (
-      'tell me a one sentence joke about a tiger\'s favorite music'
+      'tell me 15 different one sentence jokes about a tiger\'s favorite music, '
+      'each on a separate line'
     )
     logger.info(f'prompt gemini - {req}')
     print(gemini_client.prompt(req))
