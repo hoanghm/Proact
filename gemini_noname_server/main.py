@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, timezone
 import traceback
 import misc
+import gemini_client
 
 LOG_DIR = 'logs'
 
@@ -63,7 +64,8 @@ def get_credentials() -> Tuple[bool, str]:
   else:
     return (
       misc.primitive_to_bool(os.getenv('env_is_local', 'true')),
-      os.getenv('google_cloud_api_key')
+      os.getenv('google_cloud_api_key'),
+      os.getenv('google_gemini_api_key')
     )
   # end loaded
 # end def
@@ -73,13 +75,31 @@ def main():
 
   (
     env_is_local,
-    google_api_key
+    google_api_key,
+    gemini_api_key
   ) = get_credentials()
   logger.info(f'env_is_local={env_is_local}')
 
   if google_api_key is None:
     logger.error(f'google api key not found; will not be able to use these services')
   # end if no google api key
+
+  if gemini_api_key is None:
+    logger.error(f'gemini api key not found; will not be able to use this AI service')
+  else:
+    logger.info('test gemini API credentials with a simple gemini prompt')
+
+    # log into gemini api
+    gemini_client.login(gemini_api_key)
+
+    req = (
+      'tell me a one sentence joke about a tiger\'s favorite music'
+    )
+    logger.info(f'prompt gemini - {req}')
+    print(gemini_client.prompt(req))
+  # end else init gemini
+
+  # TODO handle frontend web client request for gemini API key
 
   logger.info('end main')
 # end def
