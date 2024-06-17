@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "source": "gemini_noname_flutter",
+    "source": "gemini_proact_flutter",
     "ignore": [
       "firebase.json",
       "**/.*",

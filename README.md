@@ -1,13 +1,13 @@
-# GeminiDev2024
+# Gemini Proact
 
-Leverages Gemini API to generate a custom action plan for the user to achieve a certain goal.
+Leverages Gemini natural language model to generate a custom action plan for the user to achieve a certain goal, built for the 2024 Gemini API dev competition.
 
 ## Frontend local deploy
 
 Your IDE may have an integration with Flutter so that you can skip using the `flutter` cli directly for this.
 
 ```sh
-cd gemini_noname_flutter # app name pending
+cd gemini_proact_flutter # app name pending
 flutter run -d chrome
 ```
 
