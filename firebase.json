@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "source": "gemini_proact_flutter",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "us-east1"
+    }
+  }
+}
