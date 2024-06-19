@@ -1,0 +1,1 @@
+Cross platform frontend source code for testing a map component in isolation for the Gemini Proact project.

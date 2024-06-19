@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/  if we want to ignore lib/ at root level, replace with ./lib/
 lib64/
 parts/
 sdist/
