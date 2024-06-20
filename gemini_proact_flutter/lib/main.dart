@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
+import 'dart:convert';
 import 'package:logging/logging.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 
 const String appName = 'Proact';
+const String serverBaseUrl = 'gemini-proact-server-6r6qdkry7a-ue.a.run.app';
 
 void main() {
   // logging
@@ -77,25 +80,43 @@ class _HomePageState extends State<HomePage> {
   }
 
   void initGemini() {
-    String googleGeminiApiKey;
-    try {
-      googleGeminiApiKey = Platform.environment['google_gemini_api_key'] ?? '';
-    }
-    on UnsupportedError {
-      logger.warning('unable to fetch api key from device env variables; fetching from web server');
-      googleGeminiApiKey = '';
-    }
-    
-    if (googleGeminiApiKey == '') {
-      logger.severe('error google gemini api key not found');
-    }
-    else {
-      logger.fine('info google gemini api key = $googleGeminiApiKey');
+    Future<String>(() {
+      try {
+        // gemini api key from device env vars
+        return Platform.environment['google_gemini_api_key'] ?? '';
+      }
+      on UnsupportedError {
+        logger.warning('unable to fetch api key from device env variables; fetching from web server');
+        // gemini api key from internal server
+        return http.get(
+          Uri.https(serverBaseUrl, '/apikey/gemini')
+        )
+        .then((res) {
+          logger.fine('fetched base64 gemini api key; decoding');
+          return base64Decode(res.body).toString();
+        })
+        .catchError((err) {
+          logger.severe('failed to fetch gemini api key from server. $err');
+          return '';
+        });
+      }
+      catch (err) {
+        logger.severe('unknown error $err');
+        return '';
+      }
+    })
+    .then((googleGeminiApiKey) {
+      if (googleGeminiApiKey == '') {
+        logger.severe('error google gemini api key not found');
+      }
+      else {
+        logger.fine('info google gemini api key = $googleGeminiApiKey');
 
-      // init gemini api client
-      geminiModel = GenerativeModel(model: 'gemini-1.5-flash', apiKey: googleGeminiApiKey);
-      logger.info('gemini model api client initialized');
-    }
+        // init gemini api client
+        geminiModel = GenerativeModel(model: 'gemini-1.5-flash', apiKey: googleGeminiApiKey);
+        logger.info('gemini model api client initialized');
+      }
+    });
   }
 
   void onButton() {
