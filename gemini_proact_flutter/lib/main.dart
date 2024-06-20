@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
+import 'package:logging/logging.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 const String appName = 'Proact';
 
 void main() {
+  // logging
+  // TODO override log level w env variable
+  Logger.root.level = Level.FINE;
+
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.message}\t@${record.loggerName}');
+  });
+
   runApp(const Proact());
 }
 
@@ -19,13 +30,18 @@ class Proact extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const HomePage(title: '$appName Home Page'),
+      home: const HomePage(
+        title: '$appName Home Page'
+      ),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  const HomePage({
+    super.key, 
+    required this.title
+  });
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -43,9 +59,46 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _counter = 0;
+  final logger = Logger('HomePage');
 
-  void _incrementCounter() {
+  int _counter = 0;
+  bool geminiIsInitialized = false;
+  GenerativeModel? geminiModel;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // init gemini client
+    if (!geminiIsInitialized) {
+      initGemini();
+      geminiIsInitialized = true;
+    }
+  }
+
+  void initGemini() {
+    String googleGeminiApiKey;
+    try {
+      googleGeminiApiKey = Platform.environment['google_gemini_api_key'] ?? '';
+    }
+    on UnsupportedError {
+      logger.warning('unable to fetch api key from device env variables; fetching from web server');
+      googleGeminiApiKey = '';
+    }
+    
+    if (googleGeminiApiKey == '') {
+      logger.severe('error google gemini api key not found');
+    }
+    else {
+      logger.fine('info google gemini api key = $googleGeminiApiKey');
+
+      // init gemini api client
+      geminiModel = GenerativeModel(model: 'gemini-1.5-flash', apiKey: googleGeminiApiKey);
+      logger.info('gemini model api client initialized');
+    }
+  }
+
+  void onButton() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -94,7 +147,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: onButton,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
