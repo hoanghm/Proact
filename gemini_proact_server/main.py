@@ -31,7 +31,8 @@ def init_logging():
 
   try:
     os.makedirs(LOG_DIR, exist_ok=True)
-    log_file_name = f'{datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S.%f')}.log'
+    log_file_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%S.%f')
+    log_file_name = f'{log_file_timestamp}.log'
     log_file_path = os.path.join(LOG_DIR, log_file_name)
     handler_file = logging.FileHandler(
       filename=log_file_path
