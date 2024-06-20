@@ -29,13 +29,18 @@ def web_on_ping():
     return 'success'
 # end def
 
-def run(port: int = 54321, gemini_api_key: str = None):
+def run(gemini_api_key: str=None, is_app_factory: bool=False) -> Optional[Flask]:
     env['gemini_api_key'] = gemini_api_key
 
-    logger.info('run web server')
-    app.run(
-        debug=True,
-        host='0.0.0.0',
-        port=int(os.environ.get('web_server_port', port))
-    )
+    if is_app_factory:
+        logger.info('return web server to caller')
+        return app
+    else:
+        logger.info('run web server')
+        app.run(
+            debug=True,
+            host='0.0.0.0',
+            port=int(os.environ.get('PORT', 8080))
+        )
+    # end else run now
 # end def

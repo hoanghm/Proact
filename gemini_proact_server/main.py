@@ -16,6 +16,8 @@ LOG_DIR = 'logs'
 
 logger = logging.getLogger('proact-backend-root')
 
+app = web_server.app
+
 def init_logging():
     # TODO control log level w cli opt
     logging.root.setLevel(logging.DEBUG)
@@ -72,7 +74,7 @@ def get_credentials() -> Tuple[bool, str]:
     # end loaded
 # end def
 
-def main(test_gemini: bool):
+def main(test_gemini: bool=False, is_app_factory: bool=True):
     init_logging()
 
     (
@@ -107,14 +109,10 @@ def main(test_gemini: bool):
         # end else skip test
     # end else init gemini
 
-    web_server.run(
-        gemini_api_key=gemini_api_key
+    return web_server.run(
+        gemini_api_key=gemini_api_key,
+        is_app_factory=is_app_factory
     )
 # end def
 
-if __name__ == '__main__':
-    # TODO parse cli opts and pass to main
-    main(
-        test_gemini=False
-    )
-# end if entrypoint
+# note main method is not called; assumes invoked by an entrypoint caller like gunicorn
