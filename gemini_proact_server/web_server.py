@@ -5,7 +5,7 @@ import os
 import logging
 from typing import *
 from flask import Flask
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 import base64
 
 logger = logging.getLogger('proact-server')

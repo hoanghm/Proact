@@ -81,6 +81,8 @@ gcloud run deploy $service --image "gcr.io/$project/$service" --region $region
 
 Instead of using the `hosting.public` frontend website, firebase uses the specified google cloud run service (here, our internal api server) to handle the requests for the given path prefix.
 
+**However**, this is not yet correctly configured, as the api server does not handle the current path prefix.
+
 ### `hosting.rewrites.run.pinTag`
 
 If `true`, this syncronizes deployment versioning between the `hosting.public` frontend and `hosting.rewrites.run.serviceId` backend.
