@@ -8,6 +8,16 @@
     ],
     "frameworksBackend": {
       "region": "us-east1"
-    }
+    },
+    "rewrites": [
+      {
+        "source": "/api",
+        "run": {
+          "serviceId": "gemini-proact-server",
+          "region": "us-east1",
+          "pinTag": false
+        }
+      }
+    ]
   }
 }

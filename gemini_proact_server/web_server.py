@@ -1,7 +1,11 @@
+"""Proact internal API server.
+"""
+
 import os
 import logging
 from typing import *
 from flask import Flask
+from flask_cors import CORS, cross_origin
 import base64
 
 logger = logging.getLogger('proact-server')
@@ -11,6 +15,8 @@ env: Dict[str, str] = {
 }
 
 app = Flask(__name__)
+# enable cross origin requests for all routes (needed since frontend is not hosted at same domain as this api server)
+cors = CORS(app)
 
 @app.route('/apikey/gemini', methods=['GET'])
 def web_on_apikey_gemini():

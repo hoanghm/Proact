@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
         )
         .then((res) {
           logger.fine('fetched base64 gemini api key; decoding');
-          return base64Decode(res.body).toString();
+          return String.fromCharCodes(base64.decode(res.body));
         })
         .catchError((err) {
           logger.severe('failed to fetch gemini api key from server. $err');

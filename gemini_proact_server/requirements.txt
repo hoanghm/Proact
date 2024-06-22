@@ -5,6 +5,7 @@ certifi==2024.6.2
 charset-normalizer==3.3.2
 click==8.1.7
 Flask==3.0.3
+Flask-Cors==4.0.1
 google-ai-generativelanguage==0.6.4
 google-api-core==2.19.0
 google-api-python-client==2.133.0
