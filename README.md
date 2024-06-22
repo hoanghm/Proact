@@ -6,6 +6,8 @@ Leverages Gemini natural language model to generate a custom action plan for the
 
 Firebase deployment is configured in `firebase.json`, under the project selected as default in `.firebaserc`.
 
+> **TODO** Note these instructions are from before multi-app integration between flutter and firebase was done. I think `firebase.json` is now deprecated in favor of `gemini_proact_flutter/firebase.json`.
+
 ## Frontend local deploy
 
 Your IDE may have an integration with Flutter so that you can skip using the `flutter` cli directly for this.
