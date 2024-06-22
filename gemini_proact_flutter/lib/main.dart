@@ -65,22 +65,28 @@ class _HomePageState extends State<HomePage> {
   final logger = Logger('HomePage');
 
   int _counter = 0;
-  bool geminiIsInitialized = false;
-  GenerativeModel? geminiModel;
+  bool _geminiIsInitialized = false;
+  GenerativeModel? _geminiModel;
+  final String _geminiPrompt = 'give me a summary of the first half of cien años de soledad in 2 english paragraphs';
+  String? _geminiResponse;
 
   @override
   void initState() {
     super.initState();
 
     // init gemini client
-    if (!geminiIsInitialized) {
-      initGemini();
-      geminiIsInitialized = true;
+    if (!_geminiIsInitialized) {
+      initGemini()
+      .then((model) {
+        _geminiModel = model;
+        // geminiModel may still be null, but we don't try init again
+        _geminiIsInitialized = true;
+      },);
     }
   }
 
-  void initGemini() {
-    Future<String>(() {
+  Future<GenerativeModel?> initGemini() {
+    return Future<String>(() {
       try {
         // gemini api key from device env vars
         return Platform.environment['google_gemini_api_key'] ?? '';
@@ -108,18 +114,40 @@ class _HomePageState extends State<HomePage> {
     .then((googleGeminiApiKey) {
       if (googleGeminiApiKey == '') {
         logger.severe('error google gemini api key not found');
+        return null;
       }
       else {
         logger.fine('info google gemini api key = $googleGeminiApiKey');
 
         // init gemini api client
-        geminiModel = GenerativeModel(model: 'gemini-1.5-flash', apiKey: googleGeminiApiKey);
+        var gemini = GenerativeModel(model: 'gemini-1.5-flash', apiKey: googleGeminiApiKey);
         logger.info('gemini model api client initialized');
+
+        return gemini;
       }
     });
   }
 
+  void promptGemini() async {
+    if (_geminiModel != null) {
+        final req = [
+          Content.text(_geminiPrompt)
+        ];
+        final config = GenerationConfig(candidateCount: 1, maxOutputTokens: 500);
+        final res = await _geminiModel?.generateContent(req, generationConfig: config);
+        logger.info('received gemini response of length ${res?.text?.length}');
+        setState(() {
+          _geminiResponse = res?.text;
+        });
+      }
+      else {
+        logger.warning('cannot prompt gemini without initialized client');
+      }
+  }
+  
   void onButton() {
+    promptGemini();
+
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -157,13 +185,12 @@ class _HomePageState extends State<HomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have clicked the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            const Text('Button click counter:'),
+            Text('$_counter'),
+            const Text('Example gemini prompt:'),
+            Text(_geminiPrompt),
+            const Text('Gemini response:'),
+            Text(_geminiResponse ?? '<no response>')
           ],
         ),
       ),

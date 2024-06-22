@@ -21,7 +21,7 @@ flutter run -d chrome
 
 Currently not integrated with the GitHub repo, so you can deploy the frontend flutter webpages from any branch with the following command.
 
-The `gemini_proact_flutter/.env` environment variables file, even though this is not compatible with the web deployment, is used in the below example.
+The `gemini_proact_flutter/.env` environment variables file, even though this is not compatible with the web deployment, is used in the below example to illustrate the option.
 
 ```sh
 # build with custom options
