@@ -1,4 +1,4 @@
-"""Gemini noname app server entrypoint.
+"""Gemini proact app server entrypoint.
 """
 
 from typing import *

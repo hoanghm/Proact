@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "650291910582",
+    "project_id": "gemini-goalkeeper-2024",
+    "storage_bucket": "gemini-goalkeeper-2024.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650291910582:android:77197afb25529e84ce9317",
+        "android_client_info": {
+          "package_name": "com.proact"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzC9IjFnq2VEMbSunGpYk3O-fGy6FwahQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
