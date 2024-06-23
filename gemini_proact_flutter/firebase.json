@@ -1,0 +1,41 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "gemini-goalkeeper-2024",
+                    "appId": "1:650291910582:android:77197afb25529e84ce9317",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "ios": {
+                "default": {
+                    "projectId": "gemini-goalkeeper-2024",
+                    "appId": "1:650291910582:ios:c7ad38a2ad54d93ace9317",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "ios/Runner/GoogleService-Info.plist"
+                }
+            },
+            "macos": {
+                "default": {
+                    "projectId": "gemini-goalkeeper-2024",
+                    "appId": "1:650291910582:ios:c7ad38a2ad54d93ace9317",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "macos/Runner/GoogleService-Info.plist"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "gemini-goalkeeper-2024",
+                    "configurations": {
+                        "android": "1:650291910582:android:77197afb25529e84ce9317",
+                        "ios": "1:650291910582:ios:c7ad38a2ad54d93ace9317",
+                        "macos": "1:650291910582:ios:c7ad38a2ad54d93ace9317",
+                        "web": "1:650291910582:web:005c342b865b3df1ce9317",
+                        "windows": "1:650291910582:web:005c342b865b3df1ce9317"
+                    }
+                }
+            }
+        }
+    }
+}
