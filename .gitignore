@@ -168,3 +168,6 @@ cython_debug/
 
 # macos filesystem metadata
 **/.DS_Store
+
+# visual studio code IDE settings
+.vscode/
