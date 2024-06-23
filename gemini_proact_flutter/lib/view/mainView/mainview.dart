@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/widgets/onboarding/onboarding_form.dart';
-import 'package:gemini_proact_flutter/widgets/profile/profile.dart';
-import 'package:gemini_proact_flutter/widgets/signInView/signIn.dart';
-import 'package:gemini_proact_flutter/widgets/startView/start.dart';
+import 'package:gemini_proact_flutter/view/onboarding/onboarding_form.dart';
+import 'package:gemini_proact_flutter/view/profile/profile.dart';
+import 'package:gemini_proact_flutter/view/signInView/signIn.dart';
+import 'package:gemini_proact_flutter/view/startView/start.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});

@@ -6,6 +6,8 @@ Leverages Gemini natural language model to generate a custom action plan for the
 
 Firebase deployment is configured in `firebase.json`, under the project selected as default in `.firebaserc`.
 
+> **TODO** Note these instructions are from before multi-app integration between flutter and firebase was done. I think `firebase.json` is now deprecated in favor of `gemini_proact_flutter/firebase.json`.
+
 ## Frontend local deploy
 
 Your IDE may have an integration with Flutter so that you can skip using the `flutter` cli directly for this.
@@ -15,6 +17,19 @@ Your IDE may have an integration with Flutter so that you can skip using the `fl
 ```sh
 cd gemini_proact_flutter
 flutter run -d chrome
+```
+
+### Frontend local deploy as mobile app to Android simulator
+
+```sh
+cd gemini_proact_flutter
+flutter build apk --dart-define-from-file .env --debug
+
+# find devices; one should be that is running android emulator
+flutter devices
+
+# in my case, emulator device id is "emulator-5554"
+flutter run -d emulator-5554 --use-application-binary "build/app/outputs/flutter-apk/app-debug.apk"
 ```
 
 ## Deploy flutter frontend
