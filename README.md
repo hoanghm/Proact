@@ -23,7 +23,7 @@ flutter run -d chrome
 
 ```sh
 cd gemini_proact_flutter
-flutter build apk --dart-define-from-file .env --debug --target "lib/view/main.dart"
+flutter build apk --dart-define-from-file .env --debug
 
 # find devices; one should be that is running android emulator
 flutter devices
@@ -41,7 +41,7 @@ The `gemini_proact_flutter/.env` environment variables file, even though this is
 ```sh
 # build with custom options
 cd gemini_proact_flutter
-flutter build web --dart-define-from-file ".env" --target "lib/view/main.dart"
+flutter build web --dart-define-from-file ".env"
 
 # deploy to firebase web hosting
 cd ..

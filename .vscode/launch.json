@@ -8,8 +8,7 @@
             "name": "gemini_proact_flutter",
             "cwd": "gemini_proact_flutter",
             "request": "launch",
-            "type": "dart",
-            "program": "lib/view/main.dart"
+            "type": "dart"
         },
         {
             "name": "gemini_proact_flutter (profile mode)",
