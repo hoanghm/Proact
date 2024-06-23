@@ -1,4 +1,4 @@
-package com.example.gemini_proact_flutter
+package com.proact
 
 import io.flutter.embedding.android.FlutterActivity
 
