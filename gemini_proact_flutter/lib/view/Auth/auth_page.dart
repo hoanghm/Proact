@@ -14,7 +14,7 @@ class AuthPage extends StatelessWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.hasData) { // user logged in 
-            return const HomePage(title: 'Proact Home Page');
+            return HomePage(title: 'Proact Home Page');
           }
           else {                  // user not logged in 
             return LoginPage();

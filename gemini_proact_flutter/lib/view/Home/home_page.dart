@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/model/gemini_client.dart';
 import 'package:gemini_proact_flutter/model/internal_client.dart';
 import 'package:logging/logging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({
+  HomePage({
     super.key, 
     required this.title
   });
@@ -19,6 +20,7 @@ class HomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  final user = FirebaseAuth.instance.currentUser!;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -45,6 +47,11 @@ class _HomePageState extends State<HomePage> {
 
     // Init gemini client
     GeminiClient.init();
+  }
+
+  // sign user out
+  void signUserOut()  {
+    FirebaseAuth.instance.signOut();
   }
   
   void onButton() {
@@ -76,6 +83,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [IconButton(onPressed: signUserOut, icon: Icon(Icons.logout))]
       ),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
