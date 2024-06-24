@@ -39,6 +39,8 @@ dependencies:
   logging: ^1.2.0
   http: ^1.2.1
   firebase_core: ^3.1.0
+  firebase_auth: ^5.1.0
+  cloud_firestore: ^5.0.1
 
 dev_dependencies:
   flutter_test:
