@@ -1,19 +1,17 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gemini_proact_flutter/view/Login/components/my_button.dart';
-import 'package:gemini_proact_flutter/view/Login/components/my_textfield.dart';
-import 'package:gemini_proact_flutter/view/Login/components/square_tile.dart';
+import 'package:gemini_proact_flutter/view/Login-Signup/components/my_button.dart';
+import 'package:gemini_proact_flutter/view/Login-Signup/components/my_textfield.dart';
+import 'package:gemini_proact_flutter/view/Login-Signup/components/square_tile.dart';
 
 
 class LoginPage extends StatefulWidget {
-  LoginPage({super.key});
+  final Function()? togglePageFunc;
+  
+  LoginPage({super.key, required this.togglePageFunc});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -27,10 +25,6 @@ class _LoginPageState extends State<LoginPage> {
 
   // sign user in method 
   void signUserIn() async {
-
-    WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(
-    );
 
     print("Signing user in");
     print("Email:" + emailController.text);
@@ -54,18 +48,32 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       Navigator.pop(context);
-      if (e.code == 'user-not-found') {
-        print('No user found for that email');
-      } 
-      else if (e.code == 'wrong-password') {
-        print("Wrong password");
+      if (e.code == 'invalid-credential') {
+        showErrorMessage("Invalid credential. Check your email and password.");
       }
       else { 
-        print("Some other error occured $e");
+        showErrorMessage(e.code);
       }
     }
 
     print("User signed in");
+  }
+
+  void showErrorMessage(String message) {
+    showDialog(
+      context: context, 
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.brown,
+          title: Center(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white)
+            )
+          ),
+        );
+      }
+    );
   }
 
 
@@ -75,9 +83,8 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.grey[300],
       body: SafeArea(
         child: Center(
-          child: ListView(
-            children: [
-              Column(
+          child: SingleChildScrollView(
+            child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 30),
@@ -195,19 +202,21 @@ class _LoginPageState extends State<LoginPage> {
                         )
                       ),
                       const SizedBox(width: 5,),
-                      Text(
-                        'Register Now',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        )
+                      GestureDetector(
+                        onTap: widget.togglePageFunc,
+                        child: Text(
+                          'Register Now',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          )
+                        ),
                       )
                     ],
                   )
               
                 ],
               ),
-            ],
           ),
         ),
         

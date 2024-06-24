@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/view/Home/home_page.dart';
 import 'package:gemini_proact_flutter/view/Auth/auth_page.dart';
 
 class Proact extends StatelessWidget {
