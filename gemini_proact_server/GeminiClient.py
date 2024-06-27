@@ -1,38 +1,20 @@
 """Gemini API client.
 """
 import os
-import logging
+import logging.config
+
 from attrs import define, field, NOTHING
 from typing import List, Callable
 
 import google.generativeai as genai
 
 
-def init_logger():
-    logging.root.setLevel(logging.DEBUG)
-
-    # Create a logger instance
-    logger = logging.getLogger('gemini-client')
-
-    # Create a console handler and set its level to INFO
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)  # Only handle INFO level and above messages
-
-    # Create a formatter and add it to the handler
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    console_handler.setFormatter(formatter)
-
-    # Add the handler to the logger
-    logger.addHandler(console_handler)
-    return logger
-
-
+logger = logging.getLogger("gemini_client")
 
 GEMINI_MODEL:dict = {
     "flash": "gemini-1.5-flash" 
 }
+
 
 @define
 class GeminiClient:
@@ -60,17 +42,30 @@ class GeminiClient:
         return response.text
 
 
+# test driver
 if __name__ == "__main__":
     from dotenv import load_dotenv
+    from utils import init_logging
     load_dotenv()
-    logger = init_logger()
+    init_logging()
+    
+    logger = logging.getLogger("gemini_client")
 
     client = GeminiClient(
         api_key=os.getenv("GEMINI_API_KEY"),
         logger = logger
     )
-    print(client.tools)
+    logger.info(f"tools: {client.tools}")
 
-    response_text = client.submit_prompt("What is the benefit of Creatine?")
-    print(response_text)
+    prompt = "What is the benefit of Creatine?"
+    logger.info(f"prompt: {prompt}")
+    
+    # response_text = client.submit_prompt(prompt)
+    response_text = "it's good"
+    logger.info(f"response: {response_text}")
+    
+    logger.debug("This is a debug.")
+    logger.warning("This is a warning.")
+    logger.error("This is an error.")
+    logger.critical("This is critical.")
 
