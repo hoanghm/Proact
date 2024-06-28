@@ -3,7 +3,7 @@ import logging
 import base64
 from dotenv import load_dotenv
 
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 
 from utils import init_logging
@@ -11,27 +11,31 @@ from GeminiClient import GeminiClient
 
 # Load .env & init logging
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 init_logging()
 
 
 # Initalize Flask app
-app = Flask(__name__)
+FLASK_APP_NAME = 'gemini-flask'
+app = Flask(FLASK_APP_NAME)
 cors = CORS(app) # enable cross origin requests for all sources
-app.config.from_object(__name__)
-app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
+
+# Disable flask default loggings
+# logging.getLogger('werkzeug').setLevel(logging.ERROR)
+# app.logger.setLevel(logging.ERROR)
+
 
 # Initalizer Gemini client & logger
-gemini_client = GeminiClient(api_key=os.getenv)
-logger = logging.getLogger("flask_server")
+gemini_client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"))
+logger = logging.getLogger("proact.flask")
 
 
 # Routes
 @app.route('/submit_prompt/', methods=['POST'])
-def submit_prompt(self):
-    gemini_client = GeminiClient(
-        api_key=os.getenv("GEMINI_API_KEY")
-    )
-
+def submit_prompt():
+    prompt = request.json.get("prompt")
+    answer = gemini_client.submit_prompt(prompt)
+    return answer
 
 '''
 Legacy

@@ -3,6 +3,7 @@ import json
 import logging.config
 
 from termcolor import colored
+from typing_extensions import override
 
 
 def init_logging(logger_config_path="logger_config.json"): # default to same directory
@@ -14,20 +15,24 @@ def init_logging(logger_config_path="logger_config.json"): # default to same dir
 
 
 class ColoredFormatter(logging.Formatter):
-    
+    @override
     def format(self, record):
         COLORS:dict = {
             'DEBUG': 'green',
-            'INFO': 'white',
+            'INFO': 'cyan',
             'WARNING': 'yellow',
             'ERROR': 'red',
             'CRITICAL': 'light_magenta'
         }
-        color = COLORS.get(record.levelname.upper()) or 'white'
+        levelname_color = COLORS.get(record.levelname.upper()) or 'white'
         timestamp = self.formatTime(record, self.datefmt)
+        loggername = record.name if not record.name.startswith("proact.") else record.name[len("proact."):]
 
-        metadata = f"[{record.levelname}|{record.name}|L{record.lineno}] {timestamp}"
-        record.msg = colored(f"{metadata}: {record.msg}", color)
+        levelname = colored(f"[{record.levelname}]", levelname_color)
+        loggername = colored(f"({loggername})", color='dark_grey')
+        timestamp = colored(timestamp, 'light_yellow')
+        metadata = f"{levelname}{loggername}{timestamp}"
+        record.msg = f"{metadata}: {record.msg}"
 
         return super().format(record)
     

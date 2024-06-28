@@ -3,26 +3,20 @@
     "disable_existing_loggers": false, 
     
     "formatters": {
-        "simple": {
+        "very_simple": {
             "format": "%(levelname)s - %(name)s - %(message)s"
         },
         "detailed": { 
             "format": "[%(levelname)s][%(name)s|L%(lineno)d] %(asctime)s: %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z"
         },
-        "colored_detailed": {
+        "colored_simple": {
             "()": "utils.ColoredFormatter",
-            "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+            "datefmt": "[%m/%d|%H:%M:%S]"
         }
     },
     
     "handlers": {
-        "stdout": {
-            "class": "logging.StreamHandler",
-            "level": "DEBUG",
-            "formatter": "colored_detailed",
-            "stream": "ext://sys.stdout" 
-        },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "WARNING",
@@ -30,11 +24,17 @@
             "filename": "logs/gemini.log",
             "maxBytes": 1000000,
             "backupCount": 3 
+        },
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "colored_simple",
+            "stream": "ext://sys.stdout" 
         }
     },
     
     "loggers": {
-        "root": {
+        "proact": {
             "level": "DEBUG", 
             "handlers": [
                 "stdout",
