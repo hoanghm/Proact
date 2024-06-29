@@ -5,12 +5,12 @@ class OnboardingForm extends StatefulWidget {
   const OnboardingForm({super.key});
 
   @override
-  OnboardingFormState createState() {
-    return OnboardingFormState();
+  State<OnboardingForm> createState() {
+    return _OnboardingFormState();
   }
 } 
 
-class OnboardingFormState extends State<OnboardingForm> {
+class _OnboardingFormState extends State<OnboardingForm> {
   final _formKey = GlobalKey<FormState>();
 
   @override

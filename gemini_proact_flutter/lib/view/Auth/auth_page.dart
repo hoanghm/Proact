@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart' show Logger;
-import 'package:gemini_proact_flutter/view/Home/home_page.dart';
+import 'package:gemini_proact_flutter/view/home/home_page.dart';
 import 'package:gemini_proact_flutter/view/auth/login_signup_page.dart';
 
 final logger = Logger((AuthPage).toString());
@@ -18,7 +18,7 @@ class AuthPage extends StatelessWidget {
           if (snapshot.hasData) {
             // user logged in
             logger.info('user logged in as name=${snapshot.data?.displayName} email=${snapshot.data?.email}');
-            return HomePage(title: 'Proact Home Page');
+            return const HomePage();
           }
           else {
             // user not logged in

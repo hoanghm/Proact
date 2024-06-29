@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:gemini_proact_flutter/view/button/primary_button.dart';
+import 'package:gemini_proact_flutter/view/home/home_page.dart';
+import 'package:gemini_proact_flutter/view/onboarding/onboarding_form.dart';
 import 'package:logging/logging.dart' show Logger, Level;
 import 'package:gemini_proact_flutter/view/input/my_textfield.dart' show InputTextField;
-import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail;
+import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail, AuthException;
 
 final logger = Logger((LoginSignupPage).toString());
 
@@ -20,6 +22,7 @@ class LoginSignupConstant<T> {
 
 // TODO title message to be decided
 const titleMessage = LoginSignupConstant('Let\'s save the environment!', 'The beginning of greatness!');
+const emailHint = LoginSignupConstant('Username or email', 'Email address');
 const submitLabel = LoginSignupConstant('Log in', 'Register');
 const toggleLoginSignupMessage = LoginSignupConstant('Not a member?', 'Already have an account?');
 const toggleLoginSignupLabel = LoginSignupConstant('Register now', 'Log in now');
@@ -50,8 +53,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   }
 
   void showErrorMessage(String message) {
-    logger.severe(message);
-
     hideLoadingCircle();
 
     showDialog(
@@ -78,7 +79,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     }
   }
 
-  // TODO fix loading circle handling to not use context across async gap
   void showLoadingCircle() {
     _isLoading = true;
     showDialog(
@@ -92,7 +92,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     );
   }
 
-  // TODO move login handler to model
   void doLoginSignup() async {
     logger.info(
       '${
@@ -111,12 +110,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         await loginWithEmail(emailController.text, passwordController.text);
         hideLoadingCircle();
 
-        // TODO navigate to home page
         logger.info('navigate to home page');
+        navigateToPage(const HomePage());
       }
-      catch (e) {
+      on AuthException catch (e) {
         logger.severe(e.toString(), e);
-        showErrorMessage(e.toString());
+        showErrorMessage(e.message);
       }
     } // end if login
     else {
@@ -128,18 +127,27 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           await registerWithEmail(emailController.text, passwordController.text);
           hideLoadingCircle();
           
-          // TODO navigate to onboarding page
           logger.info('navigate to onboarding page');
+          navigateToPage(const OnboardingForm());
         }
-        catch (e) {
+        on AuthException catch (e) {
           logger.severe(e.toString(), e);
-          showErrorMessage(e.toString());
+          showErrorMessage(e.message);
         }
       }
       else {
         showErrorMessage('passwords do not match');
       }
     } // end if signup
+  }
+
+  void navigateToPage(Widget page) {
+    hideLoadingCircle();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => page),
+    );
   }
 
   @override
@@ -166,7 +174,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                   // email
                   InputTextField(
                     controller: emailController,
-                    hintText: 'Username or email',
+                    hintText: emailHint.getValue(_isLogin),
                     obscureText: false,
                   ),
               

@@ -9,6 +9,8 @@ final logger = Logger('login_signup');
 enum AuthExceptionCode implements Comparable<AuthExceptionCode> {
   invalidCredential(value: 'invalid-credential'),
   invalidEmail(value: 'invalid-email'),
+  weakPassword(value: 'weak-password'),
+  accountExists(value: 'email-already-in-use'),
   unknown(value: 'unknown');
 
   const AuthExceptionCode({required this.value});
@@ -18,6 +20,11 @@ enum AuthExceptionCode implements Comparable<AuthExceptionCode> {
   @override
   int compareTo(AuthExceptionCode other) {
     return value.compareTo(other.value);
+  }
+
+  @override
+  String toString() {
+    return value;
   }
 }
 
@@ -34,7 +41,7 @@ class AuthException implements Exception {
 
   @override
   String toString() {
-    return message;
+    return '$message [$code] $cause';
   }
 }
 
@@ -94,10 +101,34 @@ Future<void> registerWithEmail(String email, String password) async {
     logger.info('user signup passed');
   }
   on FirebaseAuthException catch (e) {
-    throw AuthException(
-      message: 'Register failed at auth.', 
-      cause: e
-    );
+    if (e.code == AuthExceptionCode.invalidEmail.value) {
+      throw AuthException(
+        message: 'Invalid email.',
+        cause: e,
+        code: AuthExceptionCode.invalidEmail
+      );
+    }
+    else if (e.code == AuthExceptionCode.weakPassword.value) {
+      throw AuthException(
+        message: 'Weak password.',
+        cause: e,
+        code: AuthExceptionCode.weakPassword
+      );
+    }
+    else if (e.code == AuthExceptionCode.accountExists.value) {
+      throw AuthException(
+        message: 'Account already exists for given email.',
+        cause: e,
+        code: AuthExceptionCode.accountExists
+      );
+    }
+    else {
+      throw AuthException(
+        message: 'Register failed at auth.', 
+        cause: e
+      );
+    }
+    
   }
   on FirebaseException catch (e) {
     throw AuthException(
