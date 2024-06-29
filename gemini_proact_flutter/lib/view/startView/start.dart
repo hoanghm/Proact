@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// "Begin my journey" page.
+/// If used, will be first page before login/signup page if not logged in.
 class StartView extends StatelessWidget {
   const StartView({super.key});
 

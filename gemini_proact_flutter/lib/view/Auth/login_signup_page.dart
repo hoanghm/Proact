@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
+import 'package:gemini_proact_flutter/view/button/primary_button.dart';
 import 'package:logging/logging.dart' show Logger, Level;
-import 'package:gemini_proact_flutter/view/Login-Signup/components/my_textfield.dart' show MyTextfield;
-import 'package:gemini_proact_flutter/view/Login-Signup/components/my_button.dart' show MyButton;
-import 'package:gemini_proact_flutter/view/Login-Signup/components/square_tile.dart' show SquareTile;
+import 'package:gemini_proact_flutter/view/input/my_textfield.dart' show InputTextField;
 
-final logger = Logger((LoginOrSignupPage).toString());
+final logger = Logger((LoginSignupPage).toString());
 
 class LoginSignupConstant<T> {
   final T _loginValue;
@@ -19,20 +19,21 @@ class LoginSignupConstant<T> {
   }
 }
 
+// TODO title message to be decided
 const titleMessage = LoginSignupConstant('Let\'s save the environment!', 'The beginning of greatness!');
 const submitLabel = LoginSignupConstant('Log in', 'Register');
 const toggleLoginSignupMessage = LoginSignupConstant('Not a member?', 'Already have an account?');
 const toggleLoginSignupLabel = LoginSignupConstant('Register now', 'Log in now');
 
 /// User login or signup/register page.
-class LoginOrSignupPage extends StatefulWidget {
-  const LoginOrSignupPage({super.key});
+class LoginSignupPage extends StatefulWidget {
+  const LoginSignupPage({super.key});
 
   @override
-  State<LoginOrSignupPage> createState() => _LoginOrSignupPageState();
+  State<LoginSignupPage> createState() => _LoginSignupPageState();
 }
 
-class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
+class _LoginSignupPageState extends State<LoginSignupPage> {
   bool _isLogin = true;
 
   // text editing controllers
@@ -113,7 +114,7 @@ class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
         }
       }
       finally {
-        // TODO this is not working
+        // TODO loading circle is not working
         logger.fine('remove loading circle after attempting login');
         Navigator.pop(context); // pop loading circle
       }
@@ -172,13 +173,10 @@ class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // logo
-                  const Icon(
-                    Icons.eco,
-                    size: 80,
-                  ),
+                  // app logo
+                  ProactLogo(),
               
-                  // title
+                  // title message
                   Text(
                     titleMessage.getValue(_isLogin),
                     style: TextStyle(color: Colors.grey[700], fontSize:16)
@@ -187,7 +185,7 @@ class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
                   const SizedBox(height: 30),
               
                   // email
-                  MyTextfield(
+                  InputTextField(
                     controller: emailController,
                     hintText: 'Username or email',
                     obscureText: false,
@@ -196,44 +194,56 @@ class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
                   const SizedBox(height: 10),
               
                   // password
-                  MyTextfield(
+                  InputTextField(
                     controller: passwordController,
                     hintText: 'Password',
                     obscureText: true,
                   ),
 
                   // confirm password (signup only)
-                  if (!_isLogin) MyTextfield(
-                    controller: confirmPasswordController, 
-                    hintText: 'Confirm password', 
-                    obscureText: true
+                  if (!_isLogin) Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: InputTextField(
+                      controller: confirmPasswordController, 
+                      hintText: 'Confirm password', 
+                      obscureText: true
+                    )
                   ),
               
                   // forgot password (login only)
                   if (_isLogin) Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Forgot Password?',
-                          style: TextStyle(color: Colors.grey[600]),
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0, vertical: 10),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {
+                          logger.info('recover password');
+                          // TODO handle recover password
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: Colors.grey[600]),
+                            )
+                          ],
                         )
-                      ],
+                      )
                     ),
                   ),
               
                   const SizedBox(height: 20),              
               
                   // login/signup submit button
-                  MyButton(
+                  PrimaryButton(
                     text: submitLabel.getValue(_isLogin),
-                    onTap: doLoginSignup,
+                    onPressed: doLoginSignup,
                   ),
                   
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 20),
               
-                  // or continue with
+                  // external account title
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
                     child: Row(
@@ -264,19 +274,27 @@ class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
                   const SizedBox(height: 20),
               
                   // external account login buttons
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // google button
-                      SquareTile(
-                        imagePath: 'lib/images/google.png'
+                      Expanded(
+                        flex: 1,
+                        child: PrimaryButton(
+                          imagePath: 'lib/images/google.png', 
+                          text: 'Continue with Google', 
+                          onPressed: () {
+                            logger.info('use external account - google');
+                            // TODO handle external google account login
+                          }
+                        ),
                       ),
                     ],
                   ),
               
                   const SizedBox(height: 20),
               
-                  // not a member? register now
+                  // toggle login/signup
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -287,16 +305,19 @@ class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
                         )
                       ),
                       const SizedBox(width: 5,),
-                      GestureDetector(
-                        onTap: toggleLoginSignup,
-                        child: Text(
-                          toggleLoginSignupLabel.getValue(_isLogin),
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          )
-                        ),
-                      )
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: toggleLoginSignup,
+                          child: Text(
+                            toggleLoginSignupLabel.getValue(_isLogin),
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            )
+                          ),
+                        )
+                      ),
                     ],
                   )
                 ],

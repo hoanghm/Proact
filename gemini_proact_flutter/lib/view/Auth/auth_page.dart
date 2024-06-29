@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart' show Logger;
 import 'package:gemini_proact_flutter/view/Home/home_page.dart';
-import 'package:gemini_proact_flutter/view/Login-Signup/login_or_signup_page.dart';
+import 'package:gemini_proact_flutter/view/auth/login_signup_page.dart';
 
 final logger = Logger((AuthPage).toString());
 
@@ -23,7 +23,7 @@ class AuthPage extends StatelessWidget {
           else {
             // user not logged in
             logger.info('user not logged in');
-            return const LoginOrSignupPage();
+            return const LoginSignupPage();
           }
         },
       )
