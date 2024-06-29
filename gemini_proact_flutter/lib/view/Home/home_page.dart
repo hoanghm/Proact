@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/profile/profile.dart';
-import 'package:gemini_proact_flutter/view/startView/start.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

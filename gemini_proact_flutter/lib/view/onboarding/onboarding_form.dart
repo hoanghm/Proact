@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class OnboardingForm extends StatefulWidget {
@@ -22,23 +23,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 25, 0, 0),
-            child: 
-              Text(
-              "PROACT",
-              style: GoogleFonts.spaceGrotesk(
-                textStyle: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w400,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(0, 4),
-                      blurRadius: 4,
-                      color: Color.fromRGBO(0, 0, 0, 0.25)
-                    )
-                  ]
-                )
-              )
-            ) 
+            child: ProactLogo(size: 32) 
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
