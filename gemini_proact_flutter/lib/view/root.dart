@@ -16,7 +16,7 @@ class Proact extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: AuthPage() // returns either HomePage or LoginPage based on user auth status
+      home: const AuthPage() // returns either HomePage or LoginPage based on user auth status
     );
   }
 }
