@@ -1,10 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:gemini_proact_flutter/view/button/primary_button.dart';
 import 'package:logging/logging.dart' show Logger, Level;
 import 'package:gemini_proact_flutter/view/input/my_textfield.dart' show InputTextField;
+import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail;
 
 final logger = Logger((LoginSignupPage).toString());
 
@@ -35,6 +34,7 @@ class LoginSignupPage extends StatefulWidget {
 
 class _LoginSignupPageState extends State<LoginSignupPage> {
   bool _isLogin = true;
+  bool _isLoading = false;
 
   // text editing controllers
   final emailController = TextEditingController();
@@ -52,6 +52,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   void showErrorMessage(String message) {
     logger.severe(message);
 
+    hideLoadingCircle();
+
     showDialog(
       context: context, 
       builder: (context) {
@@ -64,7 +66,29 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
             )
           ),
         );
-      }
+      },
+      barrierDismissible: true
+    );
+  }
+
+  void hideLoadingCircle() {
+    if (_isLoading) {
+      Navigator.pop(context);
+      _isLoading = false;
+    }
+  }
+
+  // TODO fix loading circle handling to not use context across async gap
+  void showLoadingCircle() {
+    _isLoading = true;
+    showDialog(
+      context: context, 
+      builder: (context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+      barrierDismissible: false
     );
   }
 
@@ -80,43 +104,19 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       }'
     );
 
-    // show loading circle
-    showDialog(
-      context: context, 
-      builder: (context) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-      },
-      barrierDismissible: true
-    );
+    showLoadingCircle();
 
     if (_isLogin) {
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: emailController.text, 
-          password: passwordController.text
-        );
-        
-        logger.info('user login passed');
+        await loginWithEmail(emailController.text, passwordController.text);
+        hideLoadingCircle();
+
         // TODO navigate to home page
+        logger.info('navigate to home page');
       }
-      on FirebaseAuthException catch (e) {
-        // TODO move firebase auth exception codes to shared location
-        if (e.code == 'invalid-credential') {
-          showErrorMessage('Email or password is incorrect.');
-        }
-        else if (e.code == 'invalid-email') {
-          showErrorMessage('Acount for given email not found.');
-        }
-        else {
-          showErrorMessage(e.code);
-        }
-      }
-      finally {
-        // TODO loading circle is not working
-        logger.fine('remove loading circle after attempting login');
-        Navigator.pop(context); // pop loading circle
+      catch (e) {
+        logger.severe(e.toString(), e);
+        showErrorMessage(e.toString());
       }
     } // end if login
     else {
@@ -124,37 +124,16 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       if (passwordController.text == confirmPasswordController.text) {
         logger.fine('password is consistent');
 
-        logger.info('create new user in FirebaseAuth');
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text, 
-          password: passwordController.text
-        );
-        String userId = userCredential.user!.uid;
-
         try {
-          // Create new User on Cloud Firestore
-          await FirebaseFirestore.instance
-          // TODO move db identifiers (tables, names) to shared location
-          .collection('User')
-          .add({
-            'email': emailController.text, 
-            'vaultedId': userId
-          });
-
-          logger.info('user signup passed');
-          // TODO navigate to profile questions onboarding page
+          await registerWithEmail(emailController.text, passwordController.text);
+          hideLoadingCircle();
+          
+          // TODO navigate to onboarding page
+          logger.info('navigate to onboarding page');
         }
-        on FirebaseAuthException catch (e) {
+        catch (e) {
           logger.severe(e.toString(), e);
           showErrorMessage(e.toString());
-        }
-        on FirebaseException catch (e) {
-          logger.severe(e.toString(), e);
-          showErrorMessage(e.toString());
-        }
-        finally {
-          // TODO fix loading circle handling to not use context across async gap
-          Navigator.pop(context); // pop loading circle
         }
       }
       else {
