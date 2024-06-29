@@ -2,6 +2,7 @@ import 'dart:core';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart' show Logger;
+import 'package:gemini_proact_flutter/model/database/user.dart';
 
 final logger = Logger('login_signup');
 
@@ -49,7 +50,6 @@ Future<void> loginWithEmail(String email, String password) async {
     logger.info('user login passed');
   }
   on FirebaseAuthException catch (e) {
-    // TODO move firebase auth exception codes to shared location
     if (e.code == AuthExceptionCode.invalidCredential.value) {
       throw AuthException(
         message: 'Email or password is incorrect.', 
@@ -85,15 +85,13 @@ Future<void> registerWithEmail(String email, String password) async {
 
     // Create new User on Cloud Firestore
     await FirebaseFirestore.instance
-    // TODO move db identifiers (tables, names) to shared location
-    .collection('User')
+    .collection(UserTable.name)
     .add({
-      'email': email, 
-      'vaultedId': userId
+      UserAttribute.email.toString(): email, 
+      UserAttribute.vaultedId.toString(): userId
     });
 
     logger.info('user signup passed');
-    // TODO navigate to profile questions onboarding page
   }
   on FirebaseAuthException catch (e) {
     throw AuthException(
