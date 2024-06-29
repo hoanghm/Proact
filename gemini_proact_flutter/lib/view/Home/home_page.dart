@@ -20,7 +20,7 @@ class HomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
-  final user = FirebaseAuth.instance.currentUser!;
+  final User user = FirebaseAuth.instance.currentUser!;
 
   @override
   State<HomePage> createState() => _HomePageState();

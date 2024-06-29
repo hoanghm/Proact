@@ -17,7 +17,7 @@ class AuthPage extends StatelessWidget {
             return HomePage(title: 'Proact Home Page');
           }
           else {                  // user not logged in 
-            return LoginOrSingupPage();
+            return LoginOrSignupPage();
           }
         },
       )

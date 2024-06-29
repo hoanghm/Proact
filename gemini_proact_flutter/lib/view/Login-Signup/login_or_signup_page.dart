@@ -4,14 +4,14 @@ import 'package:gemini_proact_flutter/view/Login-Signup/signup_page.dart';
 import 'package:gemini_proact_flutter/view/Login-Signup/login_page.dart';
 
 
-class LoginOrSingupPage extends StatefulWidget {
-  const LoginOrSingupPage({super.key});
+class LoginOrSignupPage extends StatefulWidget {
+  const LoginOrSignupPage({super.key});
 
   @override
-  State<LoginOrSingupPage> createState() => _LoginOrSingupPageState();
+  State<LoginOrSignupPage> createState() => _LoginOrSignupPageState();
 }
 
-class _LoginOrSingupPageState extends State<LoginOrSingupPage> {
+class _LoginOrSignupPageState extends State<LoginOrSignupPage> {
   bool showLoginPage = true;
 
   // toggle between login and register

@@ -11,7 +11,7 @@ import 'package:gemini_proact_flutter/view/Login-Signup/components/square_tile.d
 class LoginPage extends StatefulWidget {
   final Function()? togglePageFunc;
   
-  LoginPage({super.key, required this.togglePageFunc});
+  const LoginPage({super.key, required this.togglePageFunc});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -25,7 +25,6 @@ class _LoginPageState extends State<LoginPage> {
 
   // sign user in method 
   void signUserIn() async {
-
     print("Signing user in");
     print("Email:" + emailController.text);
     print("Password:" + passwordController.text);
@@ -87,15 +86,11 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 30),
-              
                   //logo
                   Icon(
                     Icons.eco,
                     size: 80,
                   ),
-              
-                  const SizedBox(height: 50),
               
                   // welcome back
                   Text(
@@ -161,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10.0),
                           child: Text(
-                            'Or continnue with',
+                            'Or continue with',
                             style: TextStyle(color: Colors.grey[700]),
                           ),
                         ),
@@ -173,11 +168,11 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
-                  ),         
+                  ),
               
                   const SizedBox(height: 20),
               
-                  // google + apple sigin buttons
+                  // external account login buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -185,13 +180,12 @@ class _LoginPageState extends State<LoginPage> {
                     SquareTile(
                       imagePath: 'lib/images/google.png'
                     ),
-            
                     ],
                   ),
               
                   const SizedBox(height: 20),
               
-                  // not a remmeber? register now
+                  // not a member? register now
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -214,12 +208,10 @@ class _LoginPageState extends State<LoginPage> {
                       )
                     ],
                   )
-              
                 ],
               ),
           ),
         ),
-        
       ) 
     );
   }
