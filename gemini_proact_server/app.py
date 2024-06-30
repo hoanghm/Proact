@@ -11,9 +11,8 @@ from GeminiClient import GeminiClient
 
 # Load .env & init logging
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
 init_logging()
-
+logging.root.setLevel(level=logging.INFO)
 
 # Initalize Flask app
 FLASK_APP_NAME = 'gemini-flask'
