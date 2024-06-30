@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Auth/auth_page.dart';
+import 'package:gemini_proact_flutter/view/Onboarding/onboarding_form.dart'; 
 
 class Proact extends StatelessWidget {
   static const String appName = 'Proact';
@@ -16,7 +17,10 @@ class Proact extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: AuthPage() // returns either HomePage or LoginPage based on user auth status
+      home: Scaffold(
+        body: OnboardingForm()
+      )
+      // home: AuthPage() // returns either HomePage or LoginPage based on user auth status
     );
   }
 }
