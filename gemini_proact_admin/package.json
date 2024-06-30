@@ -1,0 +1,17 @@
+{
+  "name": "gemini-proact-admin",
+  "version": "0.1.0",
+  "description": "Proact admin tool",
+  "type": "module",
+  "main": "firestore_admin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.2.0",
+    "temp_js_logger": "^0.7.8"
+  }
+}

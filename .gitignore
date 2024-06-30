@@ -132,6 +132,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Dependencies
+**/node_modules/
+**/package-lock.json
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -175,3 +179,6 @@ cython_debug/
 
 # visual studio code IDE settings
 .vscode/
+
+# secrets
+**/service_account_keys/
