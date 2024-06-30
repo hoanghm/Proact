@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/view/Onboarding/components/form_optional_add.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/components/form_page.dart';
 
 class OnboardingForm extends StatefulWidget {
@@ -36,7 +37,8 @@ class OnboardingFormState extends State<OnboardingForm> {
   @override
   Widget build (BuildContext context) {
     return SafeArea(
-      child: FormPage(formFields: debugInput)
+      // child: FormPage(formFields: debugInput)
+      child: FormOptionalAdd()
     );
   }
 }
