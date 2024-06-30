@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_text_field.dart';
+import 'package:gemini_proact_flutter/view/onboarding/components/form_text_field.dart';
 
 class FormOptionalAdd extends StatefulWidget {
   const FormOptionalAdd({super.key});

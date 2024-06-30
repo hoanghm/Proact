@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_optional_add.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_page.dart';
+import 'package:gemini_proact_flutter/view/onboarding/components/form_optional_add.dart';
+import 'package:gemini_proact_flutter/view/onboarding/components/form_page.dart';
 
 class OnboardingForm extends StatefulWidget {
   const OnboardingForm({super.key});
 
   @override
-  OnboardingFormState createState() {
-    return OnboardingFormState();
+  State<OnboardingForm> createState() {
+    return _OnboardingFormState();
   }
 }
 
-class OnboardingFormState extends State<OnboardingForm> {
+class _OnboardingFormState extends State<OnboardingForm> {
   final debugInput = [
     {
       'question': 'Full Name',
@@ -36,7 +36,7 @@ class OnboardingFormState extends State<OnboardingForm> {
  
   @override
   Widget build (BuildContext context) {
-    return SafeArea(
+    return const SafeArea(
       // child: FormPage(formFields: debugInput)
       child: FormOptionalAdd()
     );
