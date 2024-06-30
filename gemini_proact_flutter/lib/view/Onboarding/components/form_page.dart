@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/model/Onboarding/input_field_generator.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_next_button.dart';
+import 'package:gemini_proact_flutter/view/onboarding/components/form_next_button.dart';
 
 class FormPage extends StatefulWidget {
   final List<Map<String, String>> formFields;

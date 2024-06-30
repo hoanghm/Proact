@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/model/Onboarding/input_field_type.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_text_field.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_toggle_button.dart';
+import 'package:gemini_proact_flutter/model/onboarding/input_field_type.dart';
+import 'package:gemini_proact_flutter/view/onboarding/components/form_text_field.dart';
+import 'package:gemini_proact_flutter/view/onboarding/components/form_toggle_button.dart';
 
 Widget generateFormField(String question, String required, InputFieldTypes type, List<TextEditingController> controllers) {
   switch (type) {
