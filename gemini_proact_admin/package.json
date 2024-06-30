@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Proact admin tool",
   "type": "module",
-  "main": "firestore_admin.js",
+  "main": "firebase_admin.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
