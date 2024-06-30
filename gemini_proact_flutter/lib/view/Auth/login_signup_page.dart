@@ -110,6 +110,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         await loginWithEmail(emailController.text, passwordController.text);
         hideLoadingCircle();
 
+        // TODO check if user finished onboarding questions and conditionally navigate
+        //  to onboarding page or home page.
         logger.info('navigate to home page');
         navigateToPage(const HomePage());
       }
