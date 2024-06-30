@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 
 class FormTextField extends StatefulWidget {
   final String question; 
+  final bool required;
   final TextInputType fieldType;
   final TextEditingController controller;
-  const FormTextField({super.key, required this.question, required this.fieldType, required this.controller});
+  const FormTextField({super.key, required this.question, required this.fieldType, required this.controller, required this.required});
   
   @override
   FormTextFieldState createState() {
@@ -32,6 +33,10 @@ class FormTextFieldState extends State<FormTextField> {
       child: TextFormField(
         controller: widget.controller,
         validator: (value) {
+          if (!widget.required) {
+            return null;
+          }
+          
           if (value == null || value.isEmpty) {
             return "Please enter some text";
           } else if (widget.fieldType == TextInputType.number) {

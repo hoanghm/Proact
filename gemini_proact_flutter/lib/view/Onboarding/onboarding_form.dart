@@ -14,15 +14,18 @@ class OnboardingFormState extends State<OnboardingForm> {
   final debugInput = [
     {
       'question': 'Full Name',
-      'type': 'name'
+      'type': 'name',
+      'required': 'yes'
     },
     {
       'question': 'Age',
-      'type': 'number'
+      'type': 'number',
+      'required': 'yes'
     },
     {
       'question': 'Who are you?',
-      'type': 'shortAnswer'
+      'type': 'shortAnswer',
+      'required': 'no'
     },
     {
       'question': 'Do you have a car?',
