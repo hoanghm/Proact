@@ -15,6 +15,7 @@ from typing import List, Callable, Union, Dict
 import google
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types.content import FunctionCall
+from google.protobuf.struct_pb2 import Struct
 
 from SearchClient import SearchClient
 
@@ -122,12 +123,30 @@ class GeminiClient:
             for part in response.parts:
                 if part.function_call:  # tool call requested
                     tool_output = self._execute_tool(part.function_call)
-                    messages.extend([ # Need to keep track of conversation manually
+                    messages.append( # Need to keep track of conversation manually
                         {"role": "model", "parts": response.parts},
-                        {"role": "model", "parts": [tool_output]}
-                    ])
+                    )
+                    
+                    # Put the result in a protobuf Struct
+                    tool_response = Struct()
+                    tool_response.update({"result": tool_output})
+
+                    # Create a function_response part
+                    function_response = genai.protos.Part(
+                        function_response=genai.protos.FunctionResponse(
+                            name=part.function_call.name, 
+                            response=tool_response
+                        )
+                    )
+
+                    # Append tool_call output to messages
+                    messages.append(
+                        {"role": "user", "parts": [function_response]}
+                    )
+
                     # May need to loop until there is no fn call since the API may request many function calls in a row
                     response = self.client.generate_content(messages)
+
 
             # Get final response's text  
             response_text = response.text
@@ -226,7 +245,7 @@ class GeminiClient:
 
         # get elapsed time 
         elapsed_time = time.perf_counter() - start_time
-        self.logger.info(f"Search result obtained ({elapsed_time:.2f}s)")
+        self.logger.info(f"Search result obtained in ({elapsed_time:.2f}s)")
         self.logger.debug(f"Search result: {result}")
 
         # make sure result is of type str
@@ -281,7 +300,7 @@ if __name__ == "__main__":
         tavily_api_key=os.getenv("TAVILY_API_KEY")
     )
 
-    client._submit_prompt("Where is Messi currently playing?")
+    client._submit_prompt("What are the latest news in the world?")
     
     # Try get some new missions
     # client.get_new_mission_for_user("123")
