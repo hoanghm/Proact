@@ -7,14 +7,14 @@ import os
 import json
 import time
 import logging.config
-import google.api_core
 from tenacity import retry, wait_fixed, stop_after_attempt
 
 from attrs import define, field, NOTHING
-from typing import List, Callable, Union
+from typing import List, Callable, Union, Dict
 
 import google
 import google.generativeai as genai
+from google.ai.generativelanguage_v1beta.types.content import FunctionCall
 
 from SearchClient import SearchClient
 
@@ -31,12 +31,13 @@ class GeminiClient:
     gemini_api_key: str = field(default=NOTHING, eq=False)
     tavily_api_key:str = field(default=None, eq=False)
     model: str = field(default="flash", eq=str.lower)
-    tools: List[Callable] = field(factory=list)
 
     # internal
     logger: logging.Logger = field(init=False)
     client: Union[genai.GenerativeModel, None] = field(init=False) # original gemini client
     search_client: SearchClient = field(init=False)
+    tools: List[Callable] = field(factory=list)
+    tools_dict: dict = field(factory=dict)
 
     def __attrs_post_init__(self):
         ''' Run right after __init__() '''
@@ -48,8 +49,7 @@ class GeminiClient:
             self.logger.warning("Tavily API Key not provided, internet search tool will not be available.")
         else:
             self.search_client = SearchClient(api_key=self.tavily_api_key)
-            self.tools.append(self.internet_search_tool)
-            self.logger.info("`Tavily search tool` appended to toolbox.")
+            self.add_tool_to_toolbox(self.internet_search_tool, "internet_search_tool")
         
         # initialize gemini client
         genai.configure(api_key=self.gemini_api_key)
@@ -89,8 +89,7 @@ class GeminiClient:
             # Missions parsing check
             try:
                 if '```json' in new_missions_str: # common error 
-                    self.logger.warning("The prefix`'''json` encountered in the generated output, removing it...")    
-                    new_missions_str = new_missions_str.replace('```json', '')
+                    new_missions_str = new_missions_str.replace('```json', '').replace('```', '')
                 new_missions = json.loads(new_missions_str) # Should be List[dict]
                 valid_missions_generated = True
             except json.decoder.JSONDecodeError:
@@ -103,7 +102,7 @@ class GeminiClient:
         return new_missions
     
 
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
+    # @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _submit_prompt(self, prompt:str) -> str:
         '''
         Submit a regular prompt to the Gemini API. Function calling is automatic but is implemented manually.
@@ -115,9 +114,24 @@ class GeminiClient:
         messages = [
             {"role": "user", "parts": [prompt]}
         ]
-        try:
+        try: # sending a prompt to the Gemini API
             response = self.client.generate_content(messages)
+
+            # tool call handling
+            tool_call_available = True
+            for part in response.parts:
+                if part.function_call:  # tool call requested
+                    tool_output = self._execute_tool(part.function_call)
+                    messages.extend([ # Need to keep track of conversation manually
+                        {"role": "model", "parts": response.parts},
+                        {"role": "model", "parts": [tool_output]}
+                    ])
+                    # May need to loop until there is no fn call since the API may request many function calls in a row
+                    response = self.client.generate_content(messages)
+
+            # Get final response's text  
             response_text = response.text
+
         except google.api_core.exceptions.InvalidArgument as e:# usually for invalid API key
             self.logger.error(f"Error occured when sending prompt to Gemini API: {e}")
             raise google.api_core.exceptions.InvalidArgument(e)
@@ -197,7 +211,7 @@ class GeminiClient:
             query (str): A clear and concise query
         '''
         start_time = time.perf_counter()
-        self.logger.info('Internet search requested with query: "{query}"')
+        self.logger.info(f'Internet search requested with query: "{query}"')
 
         if not hasattr(self, 'search_client'):
             error_msg = 'Search client was not initialized'
@@ -213,7 +227,7 @@ class GeminiClient:
         # get elapsed time 
         elapsed_time = time.perf_counter() - start_time
         self.logger.info(f"Search result obtained ({elapsed_time:.2f}s)")
-        self.logger.debug(f"Result: {result}")
+        self.logger.debug(f"Search result: {result}")
 
         # make sure result is of type str
         if not isinstance(result, str):
@@ -222,6 +236,31 @@ class GeminiClient:
             raise ValueError(error_msg)
     
         return result
+    
+
+    def add_tool_to_toolbox(self, tool: Callable, tool_name:str) -> None:
+        '''
+        Add a tool (function) to a list (for the gemini api) and also a dict (for executing those tools) of tools
+        '''
+        self.tools.append(tool)
+        self.tools_dict[tool_name] = tool
+        self.logger.info(f'Tool `{tool_name}` added to toolbox')
+
+
+    def _execute_tool(self, tool_call: FunctionCall) -> str:
+        '''
+        Execute the tool requested by Gemini, output should always be of type `str`
+        '''
+        # get tool call details
+        tool_name = tool_call.name
+        tool_args = tool_call.args
+        self.logger.info(f"Tool call requested for `{tool_name}` with params = {dict(tool_args)}")
+        
+        # execute the tool
+        tool_output = self.tools_dict[tool_name](**tool_args) # pass the params to actual function
+        return tool_output
+
+
 
 
 # test driver
@@ -241,9 +280,11 @@ if __name__ == "__main__":
         gemini_api_key=os.getenv("GEMINI_API_KEY"),
         tavily_api_key=os.getenv("TAVILY_API_KEY")
     )
+
+    client._submit_prompt("Where is Messi currently playing?")
     
     # Try get some new missions
-    client.get_new_mission_for_user("123")
+    # client.get_new_mission_for_user("123")
 
     # client.logger.debug("This is a debug.")
     # client.logger.warning("This is a warning.")
