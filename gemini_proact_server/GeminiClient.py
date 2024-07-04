@@ -10,7 +10,7 @@ import logging.config
 from tenacity import retry, wait_fixed, stop_after_attempt
 
 from attrs import define, field, NOTHING
-from typing import List, Callable, Union, Dict
+from typing import List, Callable, Union, Dict, Literal
 
 import google
 import google.generativeai as genai
@@ -63,28 +63,32 @@ class GeminiClient:
 
     def get_new_mission_for_user(
             self, 
+            mission_type:Literal['weekly', 'ongoing'] = 'weekly',
             user_id:str = '123', 
             num_missions:int = 3,
-            personal_info = '',
+            personal_info = '', # hard coded for now, but can go to firestore to get personal_info + interests
             interests = ''
         ) -> List[dict]:
         '''
-        Get `num_missions` new missions for user with id `user_id`
+        Retrieve information about an user, then generate `num_missions` of ['weekly', 'ongoing'] missions in JSON format
         '''
-        # hard coded for now, but can go to firestore to get these values
-        personal_info = {
-        'location': 'New York City',
-        'occupation': 'College Student'
-        }
-        interests = [
-            'Biking around the city',
-            'Playing guitar'
-        ]
+        self.logger.info(f"Received request to generate {num_missions} '{mission_type}' missions.")
         
+        # determine the mission_generation_func
+        missions_generation_func = None # either weekly or ongoing
+        if mission_type == 'weekly':
+            missions_generation_func = self._generate_weekly_missions
+        elif mission_type == 'ongoing':
+            missions_generation_func = self._generate_ongoing_missions
+        else:
+            msg = "mission type must be in either 'weekly' or 'ongoing'"
+            self.logger.error(msg)
+            raise ValueError(msg)
+
+        # generate new missions
         valid_missions_generated = False
         while not valid_missions_generated:
-            # generate new missions
-            new_missions_str = self._generate_new_missions(
+            new_missions_str = missions_generation_func(
                 personal_info=personal_info,
                 interests = interests,
                 num_missions= num_missions
@@ -97,7 +101,7 @@ class GeminiClient:
                 valid_missions_generated = True
             except json.decoder.JSONDecodeError:
                 self.logger.warning(f"Error parsing missions from type `{type(new_missions_str)}` to `List(dict)`.")
-                self.logger.info("Regenrating missions...")
+                self.logger.info("Regenerating missions...")
 
         self.logger.info(f"Successfully generated {len(new_missions)} missions.")
         self.logger.debug(f"Generated missions: \n {json.dumps(new_missions, indent=4)}")
@@ -185,7 +189,7 @@ class GeminiClient:
         pass
 
 
-    def _generate_new_missions(self, num_missions:int, personal_info:dict, interests:List[str]) -> str:
+    def _generate_weekly_missions(self, num_missions:int, personal_info:dict, interests:List[str]) -> str:
         # Info formatted as str
         personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
         interest_info_str = '\n'.join([f'- {item}' for item in interests])
@@ -227,6 +231,51 @@ class GeminiClient:
 
         # Submit prompt
         missions_str = self._submit_prompt(weekly_prompt)
+
+        return missions_str
+    
+
+    def _generate_ongoing_missions(self, num_missions:int, personal_info:dict, interests:List[str]) -> str:
+        # Info formatted as str
+        personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
+        interest_info_str = '\n'.join([f'- {item}' for item in interests])
+
+        # Prompt template
+        ongoing_prompt = f'''
+        Your goal is to suggest {num_missions} detailed missions for me to do for the next few months to help the environment and reduce global warming. 
+
+        Note that each mission should:
+        - Be clear enough for me to keep track of my progress with.
+        - Be detailed and big enough for me to work on for a few months. 
+        - Be personalized to my personal information and interests listed below. 
+        - Focus on the environmental problems near my location.
+
+        The steps you should take:
+        1. (IMPORTANT) Do an internet search for the major environemntal problems near my location. 
+        2. Focus on one or a few most critical environmental problems that I can make an impact in.
+        3. Devise a set of missions for me to do with a clear description why the mission is important, is relevant (and perhaps even helpful) to me, and clear steps for me to take.  
+
+        MAKE SURE to structure your answer in the following JSON format and do not add "```json" in the beginning:
+
+        [   // a list of missions as json objects
+            {{
+                "Title": // the title of the mission
+                "Description": // what this ,
+                "Steps": [
+                    // an array of steps as string
+                ]
+            }}
+        ]
+
+        My Personal information:
+        {personal_info_str}
+
+        My Interests:
+        {interest_info_str}
+        '''
+
+        # Submit prompt
+        missions_str = self._submit_prompt(ongoing_prompt)
 
         return missions_str
     
@@ -311,16 +360,18 @@ if __name__ == "__main__":
         tavily_api_key=os.getenv("TAVILY_API_KEY")
     )
 
-    client._submit_prompt("What are some trending cookie recipes on the internet? Provide detaisl on how to make one of them.")
-    
-    # # Try get some new missions
-    # client.get_new_mission_for_user(
-    #     personal_info = {
-    #         'location': 'New York City',
-    #         'occupation': 'College Student'
-    #     },
-    #     interests = [
-    #         'Biking around the city',
-    #         'Playing guitar'
-    #     ]
-    # )
+    # client._submit_prompt("What are some trending cookie recipes on the internet? Provide detaisl on how to make one of them.")
+
+    # Try get new ongoing missions
+    client.get_new_mission_for_user(
+        mission_type='ongoing',
+        user_id='123',
+        personal_info = {
+            'location': 'New York City',
+            'occupation': 'College Student'
+        },
+        interests = [
+            'Biking around the city',
+            'Playing guitar'
+        ]
+    )
