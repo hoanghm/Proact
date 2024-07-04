@@ -18,6 +18,7 @@ from google.ai.generativelanguage_v1beta.types.content import FunctionCall
 from google.protobuf.struct_pb2 import Struct
 
 from SearchClient import SearchClient
+from FirebaseClient import FirebaseClient
 
 
 GEMINI_MODEL:dict = {
@@ -37,6 +38,7 @@ class GeminiClient:
     logger: logging.Logger = field(init=False)
     client: Union[genai.GenerativeModel, None] = field(init=False) # original gemini client
     search_client: SearchClient = field(init=False)
+    fb_client: FirebaseClient = field(init=False)
     tools: List[Callable] = field(factory=list)
     tools_dict: dict = field(factory=dict)
 
@@ -45,13 +47,16 @@ class GeminiClient:
         # initialize logger
         self.logger = logging.getLogger("proact.gemini_client")
 
-        # initialize other clients
+        # initialize search client
         if self.tavily_api_key is None:
             self.logger.warning("Tavily API Key not provided, internet search tool will not be available.")
         else:
             self.search_client = SearchClient(api_key=self.tavily_api_key)
             self.add_tool_to_toolbox(self.internet_search_tool, "internet_search_tool")
         
+        # initialize firebase client
+        self.fb_client = FirebaseClient()
+
         # initialize gemini client
         genai.configure(api_key=self.gemini_api_key)
         self.client = genai.GenerativeModel(
@@ -63,8 +68,8 @@ class GeminiClient:
 
     def get_new_mission_for_user(
             self, 
-            mission_type:Literal['weekly', 'ongoing'] = 'weekly',
-            user_id:str = '123', 
+            user_id:str, 
+            mission_type:Literal['weekly', 'ongoing'],
             num_missions:int = 3,
             personal_info = '', # hard coded for now, but can go to firestore to get personal_info + interests
             interests = ''
@@ -74,6 +79,14 @@ class GeminiClient:
         '''
         self.logger.info(f"Received request to generate {num_missions} '{mission_type}' missions.")
         
+        # retrieve user information
+        user = self.fb_client.get_user_by_id(user_id)
+        personal_info = {
+            "location": user['location'],
+            "occupation": user['occupation']
+        }
+        interests = user['interests']
+
         # determine the mission_generation_func
         missions_generation_func = None # either weekly or ongoing
         if mission_type == 'weekly':
@@ -363,13 +376,5 @@ if __name__ == "__main__":
     # Try get new ongoing missions
     client.get_new_mission_for_user(
         mission_type='ongoing',
-        user_id='123',
-        personal_info = {
-            'location': 'New York City',
-            'occupation': 'College Student'
-        },
-        interests = [
-            'Biking around the city',
-            'Playing guitar'
-        ]
+        user_id='a0Zt4yVpfZVsf3xL3hwdmWnFstF2'
     )
