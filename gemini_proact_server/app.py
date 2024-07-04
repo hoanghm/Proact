@@ -26,7 +26,10 @@ cors = CORS(app) # enable cross origin requests for all sources
 # app.logger.setLevel(logging.ERROR)
 
 # Initalizer Gemini client & logger
-gemini_client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_client = GeminiClient(
+    gemini_api_key=os.getenv("GEMINI_API_KEY"),
+    tavily_api_key=os.getenv("TAVILY_API_KEY")
+)
 logger = logging.getLogger("proact.flask")
 
 # Set logging level for all loggers

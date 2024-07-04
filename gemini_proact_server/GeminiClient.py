@@ -115,12 +115,26 @@ class GeminiClient:
             except json.decoder.JSONDecodeError:
                 self.logger.warning(f"Error parsing missions from type `{type(new_missions_str)}` to `List(dict)`.")
                 self.logger.info("Regenerating missions...")
+        
+        # add new missions to db and also format each mission to be consistent with db schema
+        for mission in new_missions:
+            self.fb_client.add_mission_to_db( # missions will be formatted inplace
+                mission=mission,
+                user_id=user_id
+            ) 
 
         self.logger.info(f"Successfully generated {len(new_missions)} missions.")
         self.logger.debug(f"Generated missions: \n {json.dumps(new_missions, indent=4)}")
 
         return new_missions
     
+
+    def formalize_mission(self, raw_mission):
+        '''
+        Convert raw generaed missions to a format consistent with db schema with all necessary fields (such as status, styleId, etc.) 
+        '''
+        pass
+
 
     # @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _submit_prompt(self, prompt:str) -> str:
@@ -272,9 +286,9 @@ class GeminiClient:
 
         [   // a list of missions as json objects
             {{
-                "Title": // the title of the mission
-                "Description": // what this ,
-                "Steps": [
+                "title": // the title of the mission
+                "description": // what this ,
+                "steps": [
                     // an array of steps as string
                 ]
             }}
@@ -376,5 +390,6 @@ if __name__ == "__main__":
     # Try get new ongoing missions
     client.get_new_mission_for_user(
         mission_type='ongoing',
-        user_id='a0Zt4yVpfZVsf3xL3hwdmWnFstF2'
+        user_id='a0Zt4yVpfZVsf3xL3hwdmWnFstF2',
+        num_missions=2
     )
