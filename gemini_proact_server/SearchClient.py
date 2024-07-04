@@ -46,7 +46,6 @@ class SearchClient():
     def search(
         self,
         query: str,
-        search_type: Literal['regular', 'qna'] = 'qna', 
         search_depth: Literal['basic', 'advanced'] = 'advanced',
         as_str: bool = True
     ) -> Union[str, List[dict]]:
@@ -69,7 +68,7 @@ class SearchClient():
         )
 
         # convert output to str 
-        if as_str and search_type == 'regular':
+        if as_str:
             # TODO: TavilyClient.search() returns a list of JSON, needs to convert it to a str
             pass 
 
@@ -80,4 +79,6 @@ class SearchClient():
 # Test driver
 if __name__ == '__main__':
     load_dotenv()
-    
+    search_client = SearchClient(api_key=os.getenv("TAVILY_API_KEY"))
+    breakpoint()
+    result = search_client.search(query="Environmental problems near St. Louis.")

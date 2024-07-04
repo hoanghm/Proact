@@ -63,8 +63,10 @@ class GeminiClient:
 
     def get_new_mission_for_user(
             self, 
-            user_id:str, 
-            num_missions:int = 3
+            user_id:str = '123', 
+            num_missions:int = 3,
+            personal_info = '',
+            interests = ''
         ) -> List[dict]:
         '''
         Get `num_missions` new missions for user with id `user_id`
@@ -115,13 +117,29 @@ class GeminiClient:
         messages = [
             {"role": "user", "parts": [prompt]}
         ]
-        try: # sending a prompt to the Gemini API
-            response = self.client.generate_content(messages)
 
-            # tool call handling
-            tool_call_available = True
+        answer_available:bool = False # true if not more tool call is requested
+        max_depth = 5 # max number of prompt submissions until an answer is available
+        cur_depth = 0
+
+        while not answer_available: # keep submitting new prompt until an answer is available
+            cur_depth += 1
+            if cur_depth > max_depth:   # possibility of infinite loop
+                msg = f"Max prompt submission depth of {max_depth} reached."
+                self.logger.error(msg)
+                raise RuntimeError(msg)
+            
+            try: # sending a prompt to the Gemini API
+                response = self.client.generate_content(messages)
+                answer_available = True
+            except google.api_core.exceptions.InvalidArgument as e:# usually for invalid API key
+                self.logger.error(f"Error occured when sending prompt to Gemini API: {e}")
+                raise google.api_core.exceptions.InvalidArgument(e)
+
+            # check for tool call request
             for part in response.parts:
                 if part.function_call:  # tool call requested
+                    answer_available = False
                     tool_output = self._execute_tool(part.function_call)
                     messages.append( # Need to keep track of conversation manually
                         {"role": "model", "parts": response.parts},
@@ -143,18 +161,11 @@ class GeminiClient:
                     messages.append(
                         {"role": "user", "parts": [function_response]}
                     )
-
                     # May need to loop until there is no fn call since the API may request many function calls in a row
-                    response = self.client.generate_content(messages)
 
+        # Get final response's text  
+        response_text = response.text  
 
-            # Get final response's text  
-            response_text = response.text
-
-        except google.api_core.exceptions.InvalidArgument as e:# usually for invalid API key
-            self.logger.error(f"Error occured when sending prompt to Gemini API: {e}")
-            raise google.api_core.exceptions.InvalidArgument(e)
-        
         # get elapsed time and log answer
         elapsed_time = time.perf_counter() - start_time
         self.logger.info(f"Answer generated in ({elapsed_time:.2f}s)")
@@ -196,8 +207,8 @@ class GeminiClient:
         - Relate to environmental problems that my location is known to have.
         - Relate to me personally, you can ask follow up questions about me if you want to know more about me. 
         
-        Some hints for you about the steps to take:
-        1. Do an internet search for environemntal problem near my location. 
+        The steps you should take:
+        1. (IMPORTANT) Do an internet search for environemntal problem near my location. 
         2. Determine the environemntal problems that I can make an impact in.
         3. Devise a set of missions for me to do with a clear description why the mission is important, is relevant (and perhaps even helpful) to me, and clear steps for me to take.  
 
@@ -300,12 +311,16 @@ if __name__ == "__main__":
         tavily_api_key=os.getenv("TAVILY_API_KEY")
     )
 
-    client._submit_prompt("What are the latest news in the world?")
+    client._submit_prompt("What are some trending cookie recipes on the internet? Provide detaisl on how to make one of them.")
     
-    # Try get some new missions
-    # client.get_new_mission_for_user("123")
-
-    # client.logger.debug("This is a debug.")
-    # client.logger.warning("This is a warning.")
-    # client.logger.error("This is an error.")
-    # client.logger.critical("This is critical.")
+    # # Try get some new missions
+    # client.get_new_mission_for_user(
+    #     personal_info = {
+    #         'location': 'New York City',
+    #         'occupation': 'College Student'
+    #     },
+    #     interests = [
+    #         'Biking around the city',
+    #         'Playing guitar'
+    #     ]
+    # )
