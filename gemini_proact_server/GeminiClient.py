@@ -295,7 +295,7 @@ class GeminiClient:
         if not hasattr(self, 'search_client'):
             error_msg = 'Search client was not initialized'
             self.logger.error(error_msg)
-            raise ValueError(error_msg)
+            raise RuntimeError(error_msg)
         
         # just do a quick qna search for now
         result = self.search_client.quick_search(
@@ -345,14 +345,12 @@ class GeminiClient:
 # test driver
 if __name__ == "__main__":
     from dotenv import load_dotenv
-    from utils import init_logging
+    from utils import init_logging, set_global_logging_level
     load_dotenv()
     init_logging()
 
     # Set the level of all loggers
-    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-    for logger in loggers:
-        logger.setLevel(logging.DEBUG)
+    set_global_logging_level(logging.DEBUG)
 
     # Initiate gemini client
     client = GeminiClient(

@@ -3,11 +3,13 @@ import logging
 import base64
 from dotenv import load_dotenv
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from utils import init_logging
+from utils import init_logging, set_global_logging_level
 from GeminiClient import GeminiClient
+
+from typing import List, Dict
 
 # Load .env & init logging
 load_dotenv()
@@ -23,10 +25,12 @@ cors = CORS(app) # enable cross origin requests for all sources
 # logging.getLogger('werkzeug').setLevel(logging.ERROR)
 # app.logger.setLevel(logging.ERROR)
 
-
 # Initalizer Gemini client & logger
 gemini_client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"))
 logger = logging.getLogger("proact.flask")
+
+# Set logging level for all loggers
+set_global_logging_level(logging.INFO)
 
 
 # Routes
@@ -36,6 +40,34 @@ def submit_prompt():
     answer = gemini_client.submit_prompt(prompt)
     return answer
 
+
+@app.route('/get_weekly_missions/<user_id>/<num_missions>', methods=['GET'])
+def get_weekly_missions(user_id, num_missions):
+    new_missions:List[Dict] 
+    new_missions = gemini_client.get_new_mission_for_user(
+        mission_type='weekly',
+        user_id=user_id,
+        num_missions=num_missions
+    )
+    response = {
+        'new_missions': new_missions
+    }
+    return jsonify(response)
+
+
+@app.route('/get_ongoing_missions/<user_id>/<num_missions>', methods=['GET'])
+def get_ongoing_missions(user_id, num_missions):
+    new_missions:List[Dict] 
+    new_missions = gemini_client.get_new_mission_for_user(
+        mission_type='ongoing',
+        user_id=user_id,
+        num_missions=num_missions
+    )
+    response = {
+        'new_missions': new_missions
+    }
+    return jsonify(response)
+
 '''
 Legacy
 '''
@@ -43,7 +75,7 @@ Legacy
 def web_on_apikey_gemini():
     """Handle web request for gemini API key.
     """
-    return base64.b64encode(env['gemini_api_key'].encode('utf-8'))
+    return base64.b64encode(os.getenv['GEMINI_API_KEY'].encode('utf-8'))
 
 
 @app.route('/ping', methods=['GET'])
