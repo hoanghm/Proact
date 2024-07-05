@@ -33,7 +33,7 @@ class GeminiClient:
     gemini_api_key: str = field(default=NOTHING, eq=False)
     tavily_api_key:str = field(default=None, eq=False)
     model: str = field(default="flash", eq=str.lower)
-
+    
     # internal
     logger: logging.Logger = field(init=False)
     client: Union[genai.GenerativeModel, None] = field(init=False) # original gemini client
@@ -71,8 +71,7 @@ class GeminiClient:
             user_id:str, 
             mission_type:Literal['weekly', 'ongoing'],
             num_missions:int = 3,
-            personal_info = '', # hard coded for now, but can go to firestore to get personal_info + interests
-            interests = ''
+            debug = False # if true, do not populate missions to db
         ) -> List[dict]:
         '''
         Retrieve information about an user, then generate `num_missions` of ['weekly', 'ongoing'] missions in JSON format
@@ -86,6 +85,7 @@ class GeminiClient:
             "occupation": user['occupation']
         }
         interests = user['interests']
+        past_missions = self._get_user_past_missions_as_strs(user_id)
 
         # determine the mission_generation_func
         missions_generation_func = None # either weekly or ongoing
@@ -104,7 +104,8 @@ class GeminiClient:
             new_missions_str = missions_generation_func(
                 personal_info=personal_info,
                 interests = interests,
-                num_missions= num_missions
+                past_missions = past_missions,
+                num_missions = num_missions
             )
             # Missions parsing check
             try:
@@ -120,20 +121,14 @@ class GeminiClient:
         for mission in new_missions:
             self.fb_client.add_mission_to_db( # missions will be formatted inplace
                 mission=mission,
-                user_id=user_id
+                user_id=user_id,
+                debug = debug
             ) 
 
         self.logger.info(f"Successfully generated {len(new_missions)} missions.")
         self.logger.debug(f"Generated missions: \n {json.dumps(new_missions, indent=4)}")
 
         return new_missions
-    
-
-    def formalize_mission(self, raw_mission):
-        '''
-        Convert raw generaed missions to a format consistent with db schema with all necessary fields (such as status, styleId, etc.) 
-        '''
-        pass
 
 
     # @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
@@ -205,6 +200,25 @@ class GeminiClient:
         return response_text
     
 
+    def _get_user_past_missions_as_strs(self, user_id:str) -> List[str]:
+        '''
+        Get and format past missions of user `user_id` as a single string, ready to be used in prompts
+        '''
+        past_missions = self.fb_client.get_user_past_missions(user_id)
+        self.logger.info(f"Found {len(past_missions)} past missions for user with id {user_id}")
+
+        if len(past_missions) == 0:
+            return "There has not been any missions in the past."
+        past_missions_as_strs = []
+        for i, mission in enumerate(past_missions):
+            mission_str = f"{i+1}. {mission['title']}"   # each mission starts with a number
+            for step in mission['steps']:          # each step starts with "-"
+                mission_str += '\n' + f"- {step['title']}"
+            past_missions_as_strs.append(mission_str)
+
+        return past_missions_as_strs
+
+
     # TODO: Implement this function to use gemini ChatSession with automatic function calling
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _submit_chat(self, msg:str) -> str:
@@ -216,28 +230,28 @@ class GeminiClient:
         pass
 
 
-    def _generate_weekly_missions(self, num_missions:int, personal_info:dict, interests:List[str]) -> str:
+    def _generate_weekly_missions(
+            self, 
+            num_missions:int, 
+            personal_info:dict, 
+            interests:List[str],
+            past_missions:List[str]
+        ) -> str:
         # Info formatted as str
         personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
         interest_info_str = '\n'.join([f'- {item}' for item in interests])
+        past_missions_str = '\n'.join(past_missions)
 
         # Prompt template
         weekly_prompt = f'''
-        Your goal is to suggest {num_missions} missions for me to do this week to help the environment and reduce global warming. 
-        Each mission should ideally be personalized to my personal information and interests listed below. 
+        Your goal is to suggest {num_missions} missions for me to do THIS WEEK to help the environment and reduce global warming. 
 
-        Personal information:
-        {personal_info_str}
+        Note that each mission should:
+        - Be clear enough for me to keep track of my progress with.
+        - (Important) Be easy and straight-forward enough for for me to get done in a week. 
+        - Be personalized to my personal information and interests listed below. 
+        - Focus on the environmental problems near my location.
 
-        My Interests:
-        {interest_info_str}
-
-        These missions ideally should (in one or a few ways):
-        - Are clear enough for me to keep track of my progress with.
-        - Relate to my occupation. 
-        - Relate to environmental problems that my location is known to have.
-        - Relate to me personally, you can ask follow up questions about me if you want to know more about me. 
-        
         The steps you should take:
         1. (IMPORTANT) Do an internet search for environemntal problem near my location. 
         2. Determine the environemntal problems that I can make an impact in.
@@ -247,13 +261,22 @@ class GeminiClient:
 
         [   // a list of missions as json objects
             {{
-                "Title": // the title of the mission
-                "Description": // what this ,
-                "Steps": [
+                "title": // the title of the mission
+                "description": // what this ,
+                "steps": [
                     // an array of steps as string
                 ]
             }}
         ]
+
+        Personal information:
+        {personal_info_str}
+
+        My Interests:
+        {interest_info_str}
+
+        Below are some missions you have given me in the past, try to generate new missions that are different than these:
+        {past_missions_str}
         '''
 
         # Submit prompt
@@ -262,10 +285,17 @@ class GeminiClient:
         return missions_str
     
 
-    def _generate_ongoing_missions(self, num_missions:int, personal_info:dict, interests:List[str]) -> str:
+    def _generate_ongoing_missions(
+            self, 
+            num_missions:int, 
+            personal_info:dict, 
+            interests:List[str],
+            past_missions: str,
+        ) -> str:
         # Info formatted as str
         personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
         interest_info_str = '\n'.join([f'- {item}' for item in interests])
+        past_missions_str = '\n'.join(past_missions)
 
         # Prompt template
         ongoing_prompt = f'''
@@ -299,6 +329,9 @@ class GeminiClient:
 
         My Interests:
         {interest_info_str}
+
+        Below are some missions you have given me in the past, try to generate new missions that are different than these:
+        {past_missions_str}
         '''
 
         # Submit prompt
@@ -391,5 +424,6 @@ if __name__ == "__main__":
     client.get_new_mission_for_user(
         mission_type='ongoing',
         user_id='a0Zt4yVpfZVsf3xL3hwdmWnFstF2',
-        num_missions=2
+        num_missions=2,
+        debug = True
     )

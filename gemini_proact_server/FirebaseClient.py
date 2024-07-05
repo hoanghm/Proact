@@ -9,7 +9,7 @@ import google
 import logging
 
 from attrs import define, field, NOTHING
-from typing import Dict
+from typing import List, Dict
 
 @define
 class FirebaseClient():
@@ -56,10 +56,24 @@ class FirebaseClient():
         return matched_user
     
 
+    def get_user_past_missions(self, user_id:str) -> List[dict]:
+        mission_ref = self.db.collection('Mission')
+        query = mission_ref.where('user_id', '==', user_id)
+        past_missions = list(query.stream())
+
+        # Check if there is any mission at all
+        if len(past_missions) == 0:
+            return []
+        else:
+            past_missions = [m.to_dict() for m in past_missions]
+        return past_missions
+    
+
     def add_mission_to_db(
             self, 
             mission:dict, 
-            user_id:str
+            user_id:str,
+            debug:bool=False # if true, do not add mission to db
         ) -> str:
         '''
         Add a new mission as dict to Cloud Firestore, then return the geneated mission id
@@ -85,12 +99,16 @@ class FirebaseClient():
         })
 
         # add new mission to db
-        mission_ref = self.db.collection('Mission')
-        timestamp, doc_ref = mission_ref.add(mission)
-        mission['id'] = doc_ref.id
-        self.logger.info(f"New mission with id '{doc_ref.id}' added to db.")
+        if not debug:
+            mission_ref = self.db.collection('Mission')
+            timestamp, doc_ref = mission_ref.add(mission)
+            mission['id'] = doc_ref.id
+            self.logger.info(f"New mission with id '{mission['id']}' added to db.")
+        else:   # if debug = True, do not add new mission to db
+            mission['id'] = 'test_mission'
+            self.logger.info(f"Test mission was not added to db since `debug=True`.")
 
-        return doc_ref.id
+        return mission['id']
 
 
 # test driver
