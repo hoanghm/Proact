@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/onboarding/input_field_type.dart';
+import 'package:gemini_proact_flutter/view/input/my_textfield.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_text_field.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_toggle_button.dart';
 
@@ -15,6 +17,34 @@ Widget generateFormField(String question, String required, InputFieldTypes type,
       controllers.add(newController);
       return FormTextField(question: question, fieldType: getKeyboardType(type), controller: newController, required: isRequired);
   }
+}
+
+Widget questionToFormField(Question question, List<TextEditingController> controllers) {
+  InputFieldTypes type = strToFieldType(question.type);
+  switch (type) {
+    case InputFieldTypes.yesNo:
+      final newController = TextEditingController();
+      controllers.add(newController);
+      return FormToggleButton(question: question.title, controller: newController);
+    default:
+      final newController = TextEditingController();
+      controllers.add(newController);
+      return FormTextField(question: question.title, fieldType: getKeyboardType(type), controller: newController, required: question.mandatory);
+  }
+}
+
+List<Widget> questionsToFormFields(List<Question> questions, List<TextEditingController> controllers) {
+  List<Widget> generatedFields = [];
+  for (int i = 0; i < questions.length; i++) {
+    Question question = questions[i];
+    Widget generatedField = questionToFormField(question, controllers);
+    generatedFields.add(generatedField);
+    if (i != questions.length - 1) {
+      generatedFields.add(const SizedBox(height: 10));
+    }   
+  }
+  
+  return generatedFields;
 }
 
 List<Widget> generateFormFields(List<Map<String, String>> fields, List<TextEditingController> controllers) {

@@ -1,11 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/view/Auth/forgot_pass.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:gemini_proact_flutter/view/button/primary_button.dart';
 import 'package:gemini_proact_flutter/view/home/home_page.dart';
-import 'package:gemini_proact_flutter/view/onboarding/onboarding_form.dart';
 import 'package:logging/logging.dart' show Logger, Level;
 import 'package:gemini_proact_flutter/view/input/my_textfield.dart' show InputTextField;
-import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail, AuthException;
+import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail, signInWithGoogle, sendVerificationEmail, AuthException;
 
 final logger = Logger((LoginSignupPage).toString());
 
@@ -72,6 +73,24 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     );
   }
 
+  void showCheckEmailMessage() {
+    showDialog(
+      context: context, 
+      builder: (context) {
+        return const AlertDialog(
+          backgroundColor: Colors.green,
+          title: Center(
+            child: Text(
+              "Check your inbox. An email has been sent to you!",
+              style: TextStyle(color: Colors.white)
+            )
+          ),
+        );
+      },
+      barrierDismissible: true
+    );
+  }
+
   void hideLoadingCircle() {
     if (_isLoading) {
       Navigator.pop(context);
@@ -92,6 +111,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     );
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    hideLoadingCircle();
+  }
+
   void doLoginSignup() async {
     logger.info(
       '${
@@ -103,17 +128,31 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       }'
     );
 
-    showLoadingCircle();
+    // TODO transitioning from login_signup page can lead to the loading circle appear on the new page
+    // and block touch input. Work needs to be discussed / done to organize how auth flow works
+    // showLoadingCircle();
 
     if (_isLogin) {
       try {
         await loginWithEmail(emailController.text, passwordController.text);
-        hideLoadingCircle();
+        // hideLoadingCircle();
 
-        // TODO check if user finished onboarding questions and conditionally navigate
-        //  to onboarding page or home page.
-        logger.info('navigate to home page');
-        navigateToPage(const HomePage());
+        // Bottom popup message to alert user to check for verification link
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null && !user.emailVerified) {
+          await sendVerificationEmail();
+          // hideLoadingCircle();
+          showCheckEmailMessage();
+        } else {
+          emailController.clear();
+          passwordController.clear();
+          confirmPasswordController.clear();
+
+          // TODO check if user finished onboarding questions and conditionally navigate
+          //  to onboarding page or home page.
+          logger.info('navigate to home page');
+          // navigateToPage(const HomePage());
+        }
       }
       on AuthException catch (e) {
         logger.severe(e.toString(), e);
@@ -129,8 +168,21 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           await registerWithEmail(emailController.text, passwordController.text);
           hideLoadingCircle();
           
-          logger.info('navigate to onboarding page');
-          navigateToPage(const OnboardingForm());
+          // Bottom popup message to alert user to check for verification link
+          User? user = FirebaseAuth.instance.currentUser;
+          if (user != null && !user.emailVerified) {
+            await sendVerificationEmail();
+            hideLoadingCircle();
+            showCheckEmailMessage();
+          } else {
+            // TODO:           
+            // logger.info('navigate to onboarding page');
+            // navigateToPage(const OnboardingForm());
+          }
+
+          emailController.clear();
+          passwordController.clear();
+          confirmPasswordController.clear();
         }
         on AuthException catch (e) {
           logger.severe(e.toString(), e);
@@ -141,6 +193,19 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         showErrorMessage('passwords do not match');
       }
     } // end if signup
+  }
+
+  void doGoogleLogin() async {
+    try {
+      await signInWithGoogle();
+      // TODO check if user finished onboarding questions and conditionally navigate
+      //  to onboarding page or home page.
+      // navigateToPage(const HomePage());
+    }
+    on AuthException catch (e) {
+      logger.severe(e.toString(), e);
+      showErrorMessage(e.message);
+    }
   }
 
   void navigateToPage(Widget page) {
@@ -202,22 +267,20 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                   // forgot password (login only)
                   if (_isLogin) Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0, vertical: 10),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () {
-                          logger.info('recover password');
-                          // TODO handle recover password
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Forgot Password?',
-                              style: TextStyle(color: Colors.grey[600]),
-                            )
-                          ],
-                        )
+                    child: GestureDetector(
+                      onTap: () {
+                        logger.info('recover password');
+                        // TODO handle recover password
+                        navigateToPage(const ForgotPass());
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: Colors.grey[600]),
+                          )
+                        ],
                       )
                     ),
                   ),
@@ -275,6 +338,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                           onPressed: () {
                             logger.info('use external account - google');
                             // TODO handle external google account login
+                            doGoogleLogin();
                           }
                         ),
                       ),

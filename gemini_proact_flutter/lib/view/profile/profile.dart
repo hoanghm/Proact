@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show signOutUser;
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -29,6 +30,18 @@ class ProfileState extends State<Profile> {
                 )
               ),
               const Spacer(flex: 1),
+              Container(
+                margin: const EdgeInsets.fromLTRB(0, 0, 10, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(25),
+                  child: GestureDetector(
+                    onTap: () {
+                      signOutUser();
+                    },
+                    child: const Icon(Icons.logout, size: 50)
+                  )
+                )
+              ),
               Container(
                 margin: const EdgeInsets.fromLTRB(0, 0, 10, 0),
                 child: ClipRRect(

@@ -4,6 +4,7 @@ import 'package:logging/logging.dart' show Logger, Level;
 import 'dart:developer' show log;
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show signOutUnverifiedAccount;
 
 final logger = Logger('main');
 
@@ -28,6 +29,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await signOutUnverifiedAccount();
 
   runApp(const Proact());
 }

@@ -3,8 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart' show Logger;
 import 'package:gemini_proact_flutter/model/database/user.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 final logger = Logger('login_signup');
+final usersRef = FirebaseFirestore.instance.collection("User").withConverter<ProactUser>(
+  fromFirestore: (snapshot, _) => ProactUser.fromJson(snapshot.data()!), 
+  toFirestore: (user, _) => user.toJson());
 
 enum AuthExceptionCode implements Comparable<AuthExceptionCode> {
   invalidCredential(value: 'invalid-credential'),
@@ -42,6 +46,19 @@ class AuthException implements Exception {
   @override
   String toString() {
     return '$message [$code] $cause';
+  }
+}
+
+/// Sign out existing user account
+Future<void> signOutUser() async {
+  await FirebaseAuth.instance.signOut();
+}
+
+// Sign out unverified user account
+Future<void> signOutUnverifiedAccount() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user!= null && !user.emailVerified) {
+    await FirebaseAuth.instance.signOut();
   }
 }
 
@@ -86,17 +103,30 @@ Future<void> registerWithEmail(String email, String password) async {
   try {
     UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: email, 
-      password: password
+      password: password,
     );
     String userId = userCredential.user!.uid;
 
     // Create new User on Cloud Firestore
-    await FirebaseFirestore.instance
-    .collection(UserTable.name)
-    .add({
-      UserAttribute.email.toString(): email, 
-      UserAttribute.vaultedId.toString(): userId
-    });
+    await usersRef.add(
+      ProactUser(
+        email: email, 
+        interests: [], 
+        occupation: "", 
+        others: [], 
+        username: "", 
+        vaultedId: userId, 
+        onboarded: false, 
+        location: ""
+      )
+    );
+
+    // await FirebaseFirestore.instance
+    // .collection(UserTable.name)
+    // .add({
+    //   UserAttribute.email.toString(): email, 
+    //   UserAttribute.vaultedId.toString(): userId
+    // });
 
     logger.info('user signup passed');
   }
@@ -137,3 +167,59 @@ Future<void> registerWithEmail(String email, String password) async {
     );
   }
 }
+
+/// Reset user password (via sending email) 
+Future<void> forgotPassword({required String email}) async {
+  try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+  }
+  on FirebaseAuthException catch (e) {
+    throw AuthException(
+      message: 'Unable to send password reset email.', 
+      cause: e
+    );
+  }
+}
+
+/// Send verification email
+Future<void> sendVerificationEmail() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user!= null && !user.emailVerified) {
+    // await user.sendEmailVerification(
+    //   ActionCodeSettings(
+    //     url: 'https://www.yourapp.com/?email=${user.email}',
+    //     handleCodeInApp: true,
+    //     iOSBundleId: 'com.example.geminiProactFlutter',
+    //     androidPackageName: 'com.proact',
+    //     androidInstallApp: true,
+    //     androidMinimumVersion: '12',
+    //   ),
+    // );
+    await user.sendEmailVerification();
+  }
+}
+
+/// Sign into Google
+Future<UserCredential> signInWithGoogle() async {
+  GoogleSignIn googleSignIn = GoogleSignIn();
+  
+  // Sign out user so user can choose which google account (normally caches most recent signin account)
+  await googleSignIn.signOut();
+
+  // Trigger the authentication flow
+  final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+  // Obtain the auth details from the request
+  final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+
+  // Create a new credential
+  final credential = GoogleAuthProvider.credential(
+    accessToken: googleAuth?.accessToken,
+    idToken: googleAuth?.idToken,
+  );
+
+  // Once signed in, return the UserCredential
+  return await FirebaseAuth.instance.signInWithCredential(credential);
+}
+
+/// 

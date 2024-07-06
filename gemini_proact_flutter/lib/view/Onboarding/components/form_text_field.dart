@@ -12,7 +12,6 @@ class FormTextField extends StatefulWidget {
   FormTextFieldState createState() {
     return FormTextFieldState();
   }
-
 }
 
 class FormTextFieldState extends State<FormTextField> {
@@ -52,9 +51,24 @@ class FormTextFieldState extends State<FormTextField> {
         keyboardType: widget.fieldType,
         inputFormatters: widget.fieldType == TextInputType.number ? [FilteringTextInputFormatter.digitsOnly] : [],
         decoration: InputDecoration(
-          labelText: widget.question,
-          labelStyle: TextStyle(
-            color: lightGrey
+          label: RichText(
+            text: TextSpan(
+              text: widget.question,
+              style: const TextStyle(
+                color: Colors.black
+              ),
+              children: [
+                TextSpan(
+                  text: widget.required ? " *" : "",
+                  style: const TextStyle(
+                    color: Colors.red
+                  )
+                )
+              ]
+            )
+          ),
+          labelStyle: const TextStyle(
+            color: Colors.black
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 0)
