@@ -1,8 +1,16 @@
+# firebase admin certification json file
+firebase_admin_cert.json
+
+# archive and test folders
+.idea/
+**/archive/
+**/test_*
+
 # custom local files
 local/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -124,10 +132,10 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+**/.env
 .venv
 env/
-venv/
+**/venv/
 ENV/
 env.bak/
 venv.bak/
