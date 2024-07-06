@@ -208,7 +208,7 @@ class GeminiClient:
         self.logger.info(f"Found {len(past_missions)} past missions for user with id {user_id}")
 
         if len(past_missions) == 0:
-            return "There has not been any missions in the past."
+            return ["There has not been any missions in the past."]
         past_missions_as_strs = []
         for i, mission in enumerate(past_missions):
             mission_str = f"{i+1}. {mission['title']}"   # each mission starts with a number

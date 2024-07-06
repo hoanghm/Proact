@@ -58,7 +58,7 @@ class FirebaseClient():
 
     def get_user_past_missions(self, user_id:str) -> List[dict]:
         mission_ref = self.db.collection('Mission')
-        query = mission_ref.where('user_id', '==', user_id)
+        query = mission_ref.where('vaultedId', '==', user_id)
         past_missions = list(query.stream())
 
         # Check if there is any mission at all
