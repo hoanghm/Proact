@@ -163,6 +163,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# flutter
+# include pubspec.yaml, exclude generated .lock file
+**/pubspec.lock
+
 # firebase deployment
 .firebase/
 
