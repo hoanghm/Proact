@@ -3,7 +3,6 @@ import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/Onboarding/input_field_generator.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/components/form_add_fields.dart';
-import 'package:gemini_proact_flutter/view/Onboarding/components/form_optional_add.dart';
 import 'package:gemini_proact_flutter/view/home/home_page.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/components/form_text_field.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
@@ -35,7 +34,7 @@ class FormPageState extends State<FormPage> {
   List<TextEditingController> _staticTextControllers = [];
   final List<TextEditingController> _interestsTextControllers = [];
   final List<TextEditingController> _othersTextControllers = [];
-  List<TextEditingController> _dynamictextControllers = [];
+  final List<TextEditingController> _dynamictextControllers = [];
   List<Question> onboardingQuestions = []; 
 
   /// Fill initial fields given field name in Firebase
@@ -70,8 +69,12 @@ class FormPageState extends State<FormPage> {
   @override
   Widget build (BuildContext context) {
     void validateFormFields() {
-      // Map<String, Object> formSubmission = {"onboarded": true};
-      Map<String, Object> formSubmission = {};
+      Map<String, Object> formSubmission = {
+        "email": widget.user.email, 
+        "questionnaire": widget.user.questionnaire, 
+        "onboarded": true, 
+        "vaultedId": widget.user.vaultedId
+      };
       /// Check Static Form Fields
       for (int i = 0; i < _staticTextControllers.length; i++) {
         formSubmission[_staticFields[i]["description"]] = _staticTextControllers[i].text;
@@ -96,21 +99,23 @@ class FormPageState extends State<FormPage> {
         others.add(text);
       }
       formSubmission["others"] = others;
-      /// TODO: Check Dynamic Form Fields
-      for (int i = 0; i < _dynamictextControllers.length; i++) {
-
+      List<Map<String, Object>> questionSubmission = [];
+      for (int i = 0; i < _dynamictextControllers.length && i < onboardingQuestions.length; i++) {
+        String questionId = onboardingQuestions[i].id;
+        String answer = _dynamictextControllers[i].text;
+        questionSubmission.add({"questionId": questionId, "answer": answer});
       }
+      logger.info(interests);
       if (_formKey.currentState!.validate()) {
-        updateUser(formSubmission);
-        // updateUser(formSubmission)
-        //   .then((_) {
-        //     Navigator.push(
-        //       context, 
-        //       MaterialPageRoute(builder: (context) => const Scaffold(
-        //         body: HomePage()
-        //       ))
-        //     );   
-        //   }); 
+        updateUser(formSubmission, questionSubmission, widget.user.questionnaire)
+          .then((_) {
+            Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (context) => const Scaffold(
+                body: HomePage()
+              ))
+            );   
+          }); 
       }
     }
     
@@ -143,7 +148,7 @@ class FormPageState extends State<FormPage> {
                 ),
               FormAddField(required: true, controllers: _interestsTextControllers, initialTexts: widget.user.interests),
               FormAddField(required: false, controllers: _othersTextControllers, initialTexts: widget.user.others),
-              ...questionsToFormFields(onboardingQuestions, _dynamictextControllers), 
+              ...questionsToFormFields(onboardingQuestions, _dynamictextControllers, widget.user.questionnaire), 
               const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 20)),
               FormNextButton(onCallback: validateFormFields)
             ]

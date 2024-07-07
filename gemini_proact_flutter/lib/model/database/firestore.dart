@@ -50,7 +50,7 @@ Future<List<Question>> getOnboardingQuestions() async {
 }
 
 /// Update User fields
-Future<void> updateUser(Map<String, Object> newFields) async {
+Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>> questionResponses, List<dynamic> userQuestionnaire) async {
   try {
     if (FirebaseAuth.instance.currentUser == null) {
       return;
@@ -61,36 +61,27 @@ Future<void> updateUser(Map<String, Object> newFields) async {
     if (userQuery.docs.isEmpty) {
       return;
     }
-    /// Update Profile Fields
-    DocumentReference<ProactUser> docRef = userQuery.docs.first.reference;
-    // await docRef.update({"interests": [], "others": []});
-    
-    await docRef.update(newFields);
     /// Update Question Answers
-    // await usersRef.add(
-    //   ProactUser(
-    //     email: email, 
-    //     interests: [], 
-    //     occupation: "", 
-    //     others: [], 
-    //     username: "", 
-    //     vaultedId: userId, 
-    //     onboarded: false, 
-    //     location: ""
-    //   )
-    // );
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+    CollectionReference questionAnswers = FirebaseFirestore.instance.collection("QuestionAnswer");
+    List<dynamic> questionnaireIds = [];
+    for (int i = 0; i < questionResponses.length; i++) {
+      String possibleDocId = userQuestionnaire[i]["id"];
+      DocumentReference questionAnswerRef = questionAnswers.doc(possibleDocId);
+      questionResponses[i]["id"] = questionAnswerRef.id;
+      questionnaireIds.add(questionAnswerRef.id);
+      batch.set(
+        questionAnswerRef, 
+        questionResponses[i],
+        SetOptions(merge: true)
+      );
+    }   
+    await batch.commit(); 
+    /// Update Profile Fields
+    DocumentReference<ProactUser> docRef = userQuery.docs.first.reference;     
+    newFields["questionnaire"] = questionResponses;
+    await docRef.update(newFields);
   } catch (err) {
     throw ErrorDescription('$err');
   }
-
 }
-
-// CollectionReference users = FirebaseFirestore.instance.collection('users');
-
-// Future<void> updateUser() {
-//   return users
-//     .doc('ABC123')
-//     .update({'company': 'Stokes and Sons'})
-//     .then((value) => print("User Updated"))
-//     .catchError((error) => print("Failed to update user: $error"));
-// }

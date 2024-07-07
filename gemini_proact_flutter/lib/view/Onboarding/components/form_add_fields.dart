@@ -24,21 +24,28 @@ class FormAddFieldState extends State<FormAddField> {
   // State
   List<TextEditingController> textControllers = [];
   List<FormTextField> textFields = [];
+  bool checkingTextFields = false;
   void addTextField() {
+    widget.controllers.add(TextEditingController());
+    int index = widget.controllers.length - 1;  
     setState(() {
-      widget.controllers.add(TextEditingController());
-      int index = widget.controllers.length - 1;
       textFields.add(FormTextField(question: "", initialText: "", fieldType: TextInputType.text, controller: widget.controllers[index], required: false));
     });
   }
   @override
   void initState() {
     super.initState();
-    setState(() {
-      for (int i = 0; i < widget.initialTexts.length; i++) {
-        
+    if (widget.controllers.length >= widget.initialTexts.length) {
+      for (int i = 0; i < widget.initialTexts.length; i++) { 
         String initialText = widget.initialTexts[i];
+        textFields.add(FormTextField(question: "", initialText: initialText, fieldType: TextInputType.text, controller: widget.controllers[i], required: false));
+      }
+      return;
+    }
+    setState(() {
+      for (int i = 0; i < widget.initialTexts.length; i++) { 
         widget.controllers.add(TextEditingController());
+        String initialText = widget.initialTexts[i];
         int index = widget.controllers.length - 1;
         textFields.add(FormTextField(question: "", initialText: initialText, fieldType: TextInputType.text, controller: widget.controllers[index], required: false));
       }
