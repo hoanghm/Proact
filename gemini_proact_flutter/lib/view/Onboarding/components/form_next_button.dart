@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class FormNextButton extends StatelessWidget {
   final void Function() onCallback;
@@ -27,9 +28,10 @@ class FormNextButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonColor,
         ),
-        child: const Text(
-          "Next",
-          style: TextStyle(
+        child: Text(
+          "Submit",
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 18,
             color: Colors.white
           ),
         )

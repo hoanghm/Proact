@@ -139,9 +139,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
 
         // Bottom popup message to alert user to check for verification link
         User? user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          user.reload();
+        }
+
         if (user != null && !user.emailVerified) {
           await sendVerificationEmail();
           // hideLoadingCircle();
+          logger.info("user is verified");
           showCheckEmailMessage();
         } else {
           emailController.clear();
@@ -150,7 +155,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
 
           // TODO check if user finished onboarding questions and conditionally navigate
           //  to onboarding page or home page.
-          logger.info('navigate to home page');
+          // logger.info('navigate to home page');
           // navigateToPage(const HomePage());
         }
       }
@@ -236,7 +241,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                     style: TextStyle(color: Colors.grey[700], fontSize:16)
                   ),
               
-                  const SizedBox(height: 30),
+                  const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 30)),
               
                   // email
                   InputTextField(
@@ -244,9 +249,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                     hintText: emailHint.getValue(_isLogin),
                     obscureText: false,
                   ),
-              
-                  const SizedBox(height: 10),
-              
+                  const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 10)),
                   // password
                   InputTextField(
                     controller: passwordController,
@@ -284,17 +287,13 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                       )
                     ),
                   ),
-              
-                  const SizedBox(height: 20),              
-              
+                  const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 20)),                            
                   // login/signup submit button
                   PrimaryButton(
                     text: submitLabel.getValue(_isLogin),
                     onPressed: doLoginSignup,
                   ),
-                  
-                  const SizedBox(height: 20),
-              
+                  const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 20)),
                   // external account title
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -322,9 +321,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                       ],
                     ),
                   ),
-              
-                  const SizedBox(height: 20),
-              
+                  const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 20)),
                   // external account login buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -344,8 +341,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                       ),
                     ],
                   ),
-              
-                  const SizedBox(height: 20),
+
+                  const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 20)),
               
                   // toggle login/signup
                   Row(
@@ -357,7 +354,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                           color: Colors.grey[700],
                         )
                       ),
-                      const SizedBox(width: 5,),
+                      const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 5)),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
