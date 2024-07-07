@@ -47,7 +47,7 @@ def submit_prompt():
 @app.route('/get_weekly_missions/<user_id>/<num_missions>', methods=['GET'])
 def get_weekly_missions(user_id, num_missions):
     new_missions:List[Dict] 
-    new_missions = gemini_client.get_new_mission_for_user(
+    new_missions = gemini_client.get_new_missions_for_user(
         mission_type='weekly',
         user_id=user_id,
         num_missions=num_missions
@@ -61,7 +61,7 @@ def get_weekly_missions(user_id, num_missions):
 @app.route('/get_ongoing_missions/<user_id>/<num_missions>', methods=['GET'])
 def get_ongoing_missions(user_id, num_missions):
     new_missions:List[Dict] 
-    new_missions = gemini_client.get_new_mission_for_user(
+    new_missions = gemini_client.get_new_missions_for_user(
         mission_type='ongoing',
         user_id=user_id,
         num_missions=num_missions
@@ -71,12 +71,11 @@ def get_ongoing_missions(user_id, num_missions):
     }
     return jsonify(response)
 
-'''
-Legacy
-'''
 @app.route('/apikey/gemini', methods=['GET'])
 def web_on_apikey_gemini():
     """Handle web request for gemini API key.
+
+    Deprecated in favor of accepting prompts from frontend instead of frontend directly prompting gemini.
     """
     return base64.b64encode(os.getenv['GEMINI_API_KEY'].encode('utf-8'))
 

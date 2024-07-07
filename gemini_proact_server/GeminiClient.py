@@ -1,8 +1,4 @@
-'''
-    Gemini API client. 
-    - This class focuses on communications with the Gemini API and prompt engineering. 
-    - It may use other tools (such as SearchClient) to enrich the prompts sent to the Gemini API. 
-'''
+from enum import Enum
 import os
 import json
 import time
@@ -18,17 +14,21 @@ from google.ai.generativelanguage_v1beta.types.content import FunctionCall
 from google.protobuf.struct_pb2 import Struct
 
 from SearchClient import SearchClient
-from FirebaseClient import FirebaseClient
-
+from database.FirebaseClient import FirebaseClient
+from database.Mission import MissionPeriodType, Mission
 
 GEMINI_MODEL:dict = {
     "flash": "gemini-1.5-flash" 
 }
 
-
 @define
 class GeminiClient:
-    
+    '''Gemini API client. 
+
+    - This class focuses on communications with the Gemini API and prompt engineering. 
+    - It may use other tools (such as SearchClient) to enrich the prompts sent to the Gemini API. 
+    '''
+
     # input params
     gemini_api_key: str = field(default=NOTHING, eq=False)
     tavily_api_key:str = field(default=None, eq=False)
@@ -52,6 +52,7 @@ class GeminiClient:
             self.logger.warning("Tavily API Key not provided, internet search tool will not be available.")
         else:
             self.search_client = SearchClient(api_key=self.tavily_api_key)
+            self.logger.info('tavily api enabled for internet search tool.')
             self.add_tool_to_toolbox(self.internet_search_tool, "internet_search_tool")
         
         # initialize firebase client
@@ -64,19 +65,21 @@ class GeminiClient:
             tools = self.tools # may be empty
         )
         self.logger.info("Gemini client initialized")
-            
+    # end def
 
-    def get_new_mission_for_user(
-            self, 
-            user_id:str, 
-            mission_type:Literal['weekly', 'ongoing'],
-            num_missions:int = 3,
-            debug = False # if true, do not populate missions to db
-        ) -> List[dict]:
+    def get_new_missions_for_user(
+        self, 
+        user_id: str, 
+        mission_type: MissionPeriodType,
+        num_missions: int = 3,
+        attempt_max: int = 5,
+        debug = False # if true, do not populate missions to db
+    ) -> List[dict]:
         '''
-        Retrieve information about an user, then generate `num_missions` of ['weekly', 'ongoing'] missions in JSON format
+        Retrieve information about an user, then generate `num_missions` of `mission_type` missions in JSON format.
         '''
-        self.logger.info(f"Received request to generate {num_missions} '{mission_type}' missions.")
+
+        self.logger.info(f"Received request to generate {num_missions} '{mission_type.name}' missions.")
         
         # retrieve user information
         user = self.fb_client.get_user_by_id(user_id)
@@ -87,49 +90,71 @@ class GeminiClient:
         interests = user['interests']
         past_missions = self._get_user_past_missions_as_strs(user_id)
 
-        # determine the mission_generation_func
-        missions_generation_func = None # either weekly or ongoing
-        if mission_type == 'weekly':
-            missions_generation_func = self._generate_weekly_missions
-        elif mission_type == 'ongoing':
-            missions_generation_func = self._generate_ongoing_missions
-        else:
-            msg = "mission type must be in either 'weekly' or 'ongoing'"
-            self.logger.error(msg)
-            raise ValueError(msg)
-
         # generate new missions
         valid_missions_generated = False
-        while not valid_missions_generated:
-            new_missions_str = missions_generation_func(
-                personal_info=personal_info,
-                interests = interests,
-                past_missions = past_missions,
-                num_missions = num_missions
-            )
-            # Missions parsing check
+        attempt = 0
+        missions: List[Mission]
+        while not valid_missions_generated and attempt < attempt_max:
+            attempt += 1
+            self.logger.info(f'generate missions attempt {attempt}')
+
+            if mission_type == MissionPeriodType.WEEK:
+                new_missions_str = self._generate_missions(
+                    num_missions=num_missions,
+                    personal_info=personal_info,
+                    interests=interests,
+                    past_missions=past_missions,
+                    mission_period='THIS WEEK',
+                    mission_period_emphasis='(Important) Be easy and straight-forward enough for me to finish in a week.',
+                    impact_qualifier='Determine the environmental problems that I can make an impact in.'
+                )
+            elif mission_type == MissionPeriodType.ONGOING:
+                new_missions_str = self._generate_missions(
+                    num_missions=num_missions,
+                    personal_info=personal_info,
+                    interests=interests,
+                    past_missions=past_missions,
+                    mission_period='for the next few months',
+                    mission_period_emphasis='Be detailed and big enough for me to work on for a few months.',
+                    impact_qualifier='Focus on one or a few most critical environmental problems that I can make an impact in.'
+                )
+            else:
+                msg = f"mission type must be one of {MissionPeriodType._member_names_}"
+                self.logger.error(msg)
+                raise ValueError(msg)
+                
+            # missions parsing check
             try:
-                if '```json' in new_missions_str: # common error 
-                    new_missions_str = new_missions_str.replace('```json', '').replace('```', '')
-                new_missions = json.loads(new_missions_str) # Should be List[dict]
+                missions = self._parse_missions(new_missions_str)
                 valid_missions_generated = True
+            
             except json.decoder.JSONDecodeError:
-                self.logger.warning(f"Error parsing missions from type `{type(new_missions_str)}` to `List(dict)`.")
-                self.logger.info("Regenerating missions...")
+                self.logger.warning(f"Error parsing missions from gemini answer")
+        # end while not generated
         
-        # add new missions to db and also format each mission to be consistent with db schema
-        for mission in new_missions:
-            self.fb_client.add_mission_to_db( # missions will be formatted inplace
+        # add new missions to db
+        for mission in missions:
+            self.fb_client.add_mission_to_db(
                 mission=mission,
                 user_id=user_id,
                 debug = debug
-            ) 
+            )
+        # end for
 
-        self.logger.info(f"Successfully generated {len(new_missions)} missions.")
-        self.logger.debug(f"Generated missions: \n {json.dumps(new_missions, indent=4)}")
+        self.logger.info(f"Successfully generated {len(missions)} missions for user username={user['username']}.")
+        return missions
+    # end def
 
-        return new_missions
+    def _parse_missions(self, missions_str: str) -> List[Mission]:
+        '''Parse missions from gemini response.
 
+        :raises: `JsonDecodeError` on parse failure.
+        '''
+
+        if '```json' in missions_str: # common error 
+            missions_str = missions_str.replace('```json', '').replace('```', '')
+        return json.loads(missions_str, object_hook=Mission.from_dict)
+    # end def
 
     # @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _submit_prompt(self, prompt:str) -> str:
@@ -188,6 +213,9 @@ class GeminiClient:
                         {"role": "user", "parts": [function_response]}
                     )
                     # May need to loop until there is no fn call since the API may request many function calls in a row
+                # end if function call
+            # end for part in response
+        # end while no answer
 
         # Get final response's text  
         response_text = response.text  
@@ -198,26 +226,29 @@ class GeminiClient:
         self.logger.debug(f"Answer: {response_text}")
 
         return response_text
-    
+    # end def
 
     def _get_user_past_missions_as_strs(self, user_id:str) -> List[str]:
         '''
-        Get and format past missions of user `user_id` as a single string, ready to be used in prompts
+        Get and format past missions of user `user_id` as a single string, ready to be used in prompts.
+        
+        TODO omit child missions?
         '''
-        past_missions = self.fb_client.get_user_past_missions(user_id)
+
+        past_missions = self.fb_client.get_user_past_missions(user_id, depth=1)
         self.logger.info(f"Found {len(past_missions)} past missions for user with id {user_id}")
 
         if len(past_missions) == 0:
             return ["There has not been any missions in the past."]
         past_missions_as_strs = []
         for i, mission in enumerate(past_missions):
-            mission_str = f"{i+1}. {mission['title']}"   # each mission starts with a number
-            for step in mission['steps']:          # each step starts with "-"
-                mission_str += '\n' + f"- {step['title']}"
+            mission_str = f"{i+1}. {mission.title}"   # each mission starts with a number
+            for step in mission.steps_mission:          # each step starts with "-"
+                mission_str += '\n' + f"- {step.title}"
             past_missions_as_strs.append(mission_str)
 
         return past_missions_as_strs
-
+    # end def
 
     # TODO: Implement this function to use gemini ChatSession with automatic function calling
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
@@ -229,42 +260,56 @@ class GeminiClient:
         chat.send_message(msg)
         pass
 
+    def _generate_missions(
+        self,
+        num_missions: int,
+        personal_info: dict,
+        interests: List[str],
+        past_missions: List[str],
+        mission_period: str,
+        mission_period_emphasis: str,
+        impact_qualifier: str,
+        title_word_limit: int = 25,
+        description_word_limit: int = 100
+    ):
+        '''General mission generation method to submit prompt.
 
-    def _generate_weekly_missions(
-            self, 
-            num_missions:int, 
-            personal_info:dict, 
-            interests:List[str],
-            past_missions:List[str]
-        ) -> str:
+        TODO was `impact_qualifier` supposed to be uniform? If so, move to arg default.
+        TODO the emphasis on "do an internet search" is not enough to guaranteed usage of the tool. Perform internet search another way.
+
+        :param mission_period: Phrase to describe timeline scope/period estimated to complete a mission.
+        :param mission_period_emphasis: Sentence to emphasize how suggested missions should adapt to the requested period.
+        :param impact_qualifier: Sentence to emphasize selection of environmental impact, informed by mission period.
+        '''
+
         # Info formatted as str
         personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
         interest_info_str = '\n'.join([f'- {item}' for item in interests])
         past_missions_str = '\n'.join(past_missions)
 
         # Prompt template
-        weekly_prompt = f'''
-        Your goal is to suggest {num_missions} missions for me to do THIS WEEK to help the environment and reduce global warming. 
+        prompt = f'''
+        Your goal is to suggest {num_missions} missions for me to do {mission_period} to help the environment and reduce global warming. 
 
         Note that each mission should:
-        - Be clear enough for me to keep track of my progress with.
-        - (Important) Be easy and straight-forward enough for for me to get done in a week. 
+        - Be clear enough for me to keep track of my progress.
+        - {mission_period_emphasis} 
         - Be personalized to my personal information and interests listed below. 
         - Focus on the environmental problems near my location.
 
         The steps you should take:
-        1. (IMPORTANT) Do an internet search for environemntal problem near my location. 
-        2. Determine the environemntal problems that I can make an impact in.
-        3. Devise a set of missions for me to do with a clear description why the mission is important, is relevant (and perhaps even helpful) to me, and clear steps for me to take.  
+        1. (IMPORTANT) Do an internet search for environmental problem near my location. 
+        2. {impact_qualifier}
+        3. Devise a set of missions {num_missions} for me to do with a clear description why each mission is important, is relevant (and perhaps even helpful) to me, and clear steps for me to take.  
 
         MAKE SURE to structure your answer in the following JSON format and do not add "```json" in the beginning:
 
         [   // a list of missions as json objects
             {{
-                "title": // the title of the mission
-                "description": // what this ,
+                "title": // title of the mission, in {title_word_limit} words or fewer
+                "description": // description of the mission, in {description_word_limit} words or less
                 "steps": [
-                    // an array of steps as string
+                    // an array of steps as strings each of {description_word_limit} words or less
                 ]
             }}
         ]
@@ -280,65 +325,10 @@ class GeminiClient:
         '''
 
         # Submit prompt
-        missions_str = self._submit_prompt(weekly_prompt)
+        missions_str = self._submit_prompt(prompt)
 
         return missions_str
-    
-
-    def _generate_ongoing_missions(
-            self, 
-            num_missions:int, 
-            personal_info:dict, 
-            interests:List[str],
-            past_missions: str,
-        ) -> str:
-        # Info formatted as str
-        personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
-        interest_info_str = '\n'.join([f'- {item}' for item in interests])
-        past_missions_str = '\n'.join(past_missions)
-
-        # Prompt template
-        ongoing_prompt = f'''
-        Your goal is to suggest {num_missions} detailed missions for me to do for the next few months to help the environment and reduce global warming. 
-
-        Note that each mission should:
-        - Be clear enough for me to keep track of my progress with.
-        - Be detailed and big enough for me to work on for a few months. 
-        - Be personalized to my personal information and interests listed below. 
-        - Focus on the environmental problems near my location.
-
-        The steps you should take:
-        1. (IMPORTANT) Do an internet search for the major environemntal problems near my location. 
-        2. Focus on one or a few most critical environmental problems that I can make an impact in.
-        3. Devise a set of missions for me to do with a clear description why the mission is important, is relevant (and perhaps even helpful) to me, and clear steps for me to take.  
-
-        MAKE SURE to structure your answer in the following JSON format and do not add "```json" in the beginning:
-
-        [   // a list of missions as json objects
-            {{
-                "title": // the title of the mission
-                "description": // what this ,
-                "steps": [
-                    // an array of steps as string
-                ]
-            }}
-        ]
-
-        My Personal information:
-        {personal_info_str}
-
-        My Interests:
-        {interest_info_str}
-
-        Below are some missions you have given me in the past, try to generate new missions that are different than these:
-        {past_missions_str}
-        '''
-
-        # Submit prompt
-        missions_str = self._submit_prompt(ongoing_prompt)
-
-        return missions_str
-    
+    # end def
 
     # Gemini Tool 
     def internet_search_tool(self, query:str) -> str:
@@ -375,7 +365,7 @@ class GeminiClient:
             raise ValueError(error_msg)
     
         return result
-    
+    # end def
 
     def add_tool_to_toolbox(self, tool: Callable, tool_name:str) -> None:
         '''
@@ -384,7 +374,7 @@ class GeminiClient:
         self.tools.append(tool)
         self.tools_dict[tool_name] = tool
         self.logger.info(f'Tool `{tool_name}` added to toolbox')
-
+    # end def
 
     def _execute_tool(self, tool_call: FunctionCall) -> str:
         '''
@@ -398,14 +388,13 @@ class GeminiClient:
         # execute the tool
         tool_output = self.tools_dict[tool_name](**tool_args) # pass the params to actual function
         return tool_output
-
-
-
+    # end def
+# end class
 
 # test driver
 if __name__ == "__main__":
     from dotenv import load_dotenv
-    from utils import init_logging, set_global_logging_level
+    from utils.init_logging import init_logging, set_global_logging_level
     load_dotenv()
     init_logging()
 
@@ -418,12 +407,43 @@ if __name__ == "__main__":
         tavily_api_key=os.getenv("TAVILY_API_KEY")
     )
 
+    debug_mode = os.getenv('DEBUG_MODE', 'True').lower().strip() == 'true'
+    client.logger.debug(f'debug_mode={debug_mode}')
+
     # client._submit_prompt("What are some trending cookie recipes on the internet? Provide detaisl on how to make one of them.")
 
-    # Try get new ongoing missions
-    client.get_new_mission_for_user(
-        mission_type='ongoing',
-        user_id='a0Zt4yVpfZVsf3xL3hwdmWnFstF2',
-        num_missions=2,
-        debug = True
-    )
+    saved_gemini_answer_missions = os.getenv('SAVED_GEMINI_ANSWER_MISSIONS')
+    if saved_gemini_answer_missions is not None:
+        client.logger.info(f'parse missions from saved answer {saved_gemini_answer_missions}')
+        with open(saved_gemini_answer_missions, mode='r') as f:
+            missions = client._parse_missions(f.read())
+
+            client.logger.info(f'missions[0]={missions[0]}')
+            client.logger.info(f'missions[0].steps[0]={missions[0].steps_mission[0]} id={missions[0].steps_id[0]}')
+
+            client.fb_client.add_mission_to_db(
+                mission=missions[0],
+                user_id=os.getenv('USER_ID'),
+                debug=debug_mode
+            )
+
+            client.logger.debug(f"Generated missions: \n {json.dumps(
+            [
+                mission.to_dict(depth=1)
+                for mission in missions
+            ], 
+            indent=4
+        )}")
+        # end with
+    # end if saved answer
+    else:
+        client.logger.info(f'generate new missions without saved answer')
+        # Try get new ongoing missions
+        client.get_new_missions_for_user(
+            mission_type=MissionPeriodType.ONGOING,
+            user_id=os.getenv('USER_ID'),
+            num_missions=2,
+            debug=debug_mode
+        )
+    # end if not saved answer
+# end if __main__
