@@ -40,8 +40,8 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: <Widget>[
-          const SingleChildScrollView(
-            child: OnboardingForm(),
+          const Center(
+            child: Text("Insert home page here")
           ),
           const Profile()
         ][_currentPageIndex]

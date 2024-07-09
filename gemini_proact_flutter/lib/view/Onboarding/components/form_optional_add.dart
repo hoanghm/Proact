@@ -23,7 +23,7 @@ class FormOptionalAddState extends State<FormOptionalAdd> {
     setState(() {
       textControllers.add(TextEditingController());
       int index = textControllers.length - 1;
-      textFields.add(FormTextField(question: "", fieldType: TextInputType.text, controller: textControllers[index], required: false));
+      textFields.add(FormTextField(question: "", initialText: "",fieldType: TextInputType.text, controller: textControllers[index], required: false));
     });
   }
 

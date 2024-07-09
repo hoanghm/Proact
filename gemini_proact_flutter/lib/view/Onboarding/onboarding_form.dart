@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/model/database/question.dart';
+import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_optional_add.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_page.dart';
 import 'package:gemini_proact_flutter/model/database/firestore.dart' show getOnboardingQuestions;
@@ -7,7 +8,8 @@ import 'package:logging/logging.dart' show Logger;
 
 final logger = Logger((OnboardingForm).toString());
 class OnboardingForm extends StatefulWidget {
-  const OnboardingForm({super.key});
+  final ProactUser user;
+  const OnboardingForm({super.key, required this.user});
 
   @override
   State<OnboardingForm> createState() {
@@ -34,9 +36,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
   @override
   Widget build (BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: SafeArea(
-        child: FormPage()
+        child: FormPage(user: widget.user)
       )
     );
   }

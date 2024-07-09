@@ -32,7 +32,7 @@ class PrimaryButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (imagePath != null) SquareTile(imagePath: imagePath!, size: 20,),
-            if (imagePath != null && text != null) const SizedBox(width: 10,),
+            if (imagePath != null && text != null) const Padding(padding: EdgeInsets.fromLTRB(5, 0, 5, 0)),
             if (text != null) Text(
               text!,
               style: GoogleFonts.spaceGrotesk(

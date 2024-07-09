@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 class FormToggleButton extends StatefulWidget {
   final String question;
   final TextEditingController controller;
-  const FormToggleButton({super.key, required this.question, required this.controller});
+  final bool initialStatus;
+  const FormToggleButton({super.key, required this.question, required this.controller, required this.initialStatus});
   
   @override
   FormToggleButtonState createState() {
@@ -21,7 +22,10 @@ class FormToggleButtonState extends State<FormToggleButton> {
   bool isSelected = false;
   @override
   void initState() {
-    widget.controller.text = "no";
+    setState(() {
+      isSelected = widget.initialStatus;
+      widget.controller.text = widget.initialStatus ? "yes" : "no";
+    });
     super.initState();
   }
 

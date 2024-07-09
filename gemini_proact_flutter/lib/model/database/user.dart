@@ -1,10 +1,11 @@
 class ProactUser {
-  ProactUser({required this.email, required this.interests, required this.occupation, required this.others, required this.username, required this.vaultedId, required this.onboarded, required this.location});
+  ProactUser({required this.email, required this.questionnaire, required this.interests, required this.occupation, required this.others, required this.username, required this.vaultedId, required this.onboarded, required this.location});
    ProactUser.fromJson(Map<String, Object?> json)
     : this(
         email: json['email']! as String,
         username: json['username']! as String,
         interests: json['interests']! as List<dynamic>,
+        questionnaire: json['questionnaire']! as List<dynamic>,
         occupation: json['occupation']! as String,
         onboarded: json['onboarded']! as bool,
         location: json['location']! as String,
@@ -18,6 +19,7 @@ class ProactUser {
   final String location;
   final List<dynamic> others;
   final List<dynamic> interests;
+  final List<dynamic> questionnaire;
   final bool onboarded;
    Map<String, Object?> toJson() {
     return {
@@ -29,6 +31,7 @@ class ProactUser {
       'others': others,
       'interests': interests,
       'onboarded': onboarded,
+      'questionnaire': questionnaire
     };
   }
 }

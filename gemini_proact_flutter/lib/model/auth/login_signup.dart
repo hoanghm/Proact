@@ -114,19 +114,13 @@ Future<void> registerWithEmail(String email, String password) async {
         interests: [], 
         occupation: "", 
         others: [], 
+        questionnaire: [],
         username: "", 
         vaultedId: userId, 
         onboarded: false, 
         location: ""
       )
     );
-
-    // await FirebaseFirestore.instance
-    // .collection(UserTable.name)
-    // .add({
-    //   UserAttribute.email.toString(): email, 
-    //   UserAttribute.vaultedId.toString(): userId
-    // });
 
     logger.info('user signup passed');
   }
