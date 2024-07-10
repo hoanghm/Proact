@@ -16,6 +16,7 @@ from google.protobuf.struct_pb2 import Struct
 from SearchClient import SearchClient
 from database.FirebaseClient import FirebaseClient
 from database.Mission import MissionPeriodType, Mission
+from database.User import User
 
 GEMINI_MODEL:dict = {
     "flash": "gemini-1.5-flash" 
@@ -69,26 +70,27 @@ class GeminiClient:
 
     def get_new_missions_for_user(
         self, 
-        user_id: str, 
+        user: Union[str, User], 
         mission_type: MissionPeriodType,
         num_missions: int = 3,
         attempt_max: int = 5,
         debug = False # if true, do not populate missions to db
     ) -> List[dict]:
-        '''
-        Retrieve information about an user, then generate `num_missions` of `mission_type` missions in JSON format.
+        '''Retrieve information about an user, then generate `num_missions` of `mission_type` missions in JSON format.
         '''
 
         self.logger.info(f"Received request to generate {num_missions} '{mission_type.name}' missions.")
         
         # retrieve user information
-        user = self.fb_client.get_user_by_id(user_id)
+        if type(user) == str:
+            user = self.fb_client.get_user_by_id(user)
         personal_info = {
-            "location": user['location'],
-            "occupation": user['occupation']
+            "location": user.location,
+            "occupation": user.occupation
         }
-        interests = user['interests']
-        past_missions = self._get_user_past_missions_as_strs(user_id)
+        # TODO omit mission steps for past missions?
+        self.fb_client.fetch_user_missions(user, depth=1)
+        past_missions = self._get_user_past_missions_as_strs(user)
 
         # generate new missions
         valid_missions_generated = False
@@ -102,7 +104,7 @@ class GeminiClient:
                 new_missions_str = self._generate_missions(
                     num_missions=num_missions,
                     personal_info=personal_info,
-                    interests=interests,
+                    interests=user.interests,
                     past_missions=past_missions,
                     mission_period='THIS WEEK',
                     mission_period_emphasis='(Important) Be easy and straight-forward enough for me to finish in a week.',
@@ -112,7 +114,7 @@ class GeminiClient:
                 new_missions_str = self._generate_missions(
                     num_missions=num_missions,
                     personal_info=personal_info,
-                    interests=interests,
+                    interests=user.interests,
                     past_missions=past_missions,
                     mission_period='for the next few months',
                     mission_period_emphasis='Be detailed and big enough for me to work on for a few months.',
@@ -136,7 +138,7 @@ class GeminiClient:
         for mission in missions:
             self.fb_client.add_mission_to_db(
                 mission=mission,
-                user_id=user_id,
+                user=user,
                 debug = debug
             )
         # end for
@@ -228,22 +230,23 @@ class GeminiClient:
         return response_text
     # end def
 
-    def _get_user_past_missions_as_strs(self, user_id:str) -> List[str]:
-        '''
-        Get and format past missions of user `user_id` as a single string, ready to be used in prompts.
-        
-        TODO omit child missions?
+    def _get_user_past_missions_as_strs(self, user: User) -> List[str]:
+        '''Format past missions of user `user` as a single string, ready to be used in prompts.
+
+        Assumes that user missions have already been fetched.
+
+        TODO exclude some missions (ex. not accepted, not completed)?
         '''
 
-        past_missions = self.fb_client.get_user_past_missions(user_id, depth=1)
-        self.logger.info(f"Found {len(past_missions)} past missions for user with id {user_id}")
+        past_missions = user.missions_mission
+        self.logger.info(f'found {len(past_missions)} past missions for user with id {user}')
 
         if len(past_missions) == 0:
             return ["There has not been any missions in the past."]
         past_missions_as_strs = []
         for i, mission in enumerate(past_missions):
             mission_str = f"{i+1}. {mission.title}"   # each mission starts with a number
-            for step in mission.steps_mission:          # each step starts with "-"
+            for step in mission.missions_mission:          # each step starts with "-"
                 mission_str += '\n' + f"- {step.title}"
             past_missions_as_strs.append(mission_str)
 
@@ -411,6 +414,7 @@ if __name__ == "__main__":
     client.logger.debug(f'debug_mode={debug_mode}')
 
     # client._submit_prompt("What are some trending cookie recipes on the internet? Provide detaisl on how to make one of them.")
+    user = client.fb_client.get_user_by_id(os.getenv('USER_ID'))
 
     saved_gemini_answer_missions = os.getenv('SAVED_GEMINI_ANSWER_MISSIONS')
     if saved_gemini_answer_missions is not None:
@@ -418,22 +422,21 @@ if __name__ == "__main__":
         with open(saved_gemini_answer_missions, mode='r') as f:
             missions = client._parse_missions(f.read())
 
-            client.logger.info(f'missions[0]={missions[0]}')
-            client.logger.info(f'missions[0].steps[0]={missions[0].steps_mission[0]} id={missions[0].steps_id[0]}')
+            for m_idx, mission in enumerate(missions):
+                client.logger.info(f'missions[{m_idx}]={mission}')
+                client.logger.info(f'missions[{m_idx}].steps[0]={mission.missions_mission[0]} id={mission.missions_id[0]}')
 
-            client.fb_client.add_mission_to_db(
-                mission=missions[0],
-                user_id=os.getenv('USER_ID'),
-                debug=debug_mode
-            )
+                client.fb_client.add_mission_to_db(
+                    mission=mission,
+                    user=user,
+                    debug=debug_mode
+                )
 
-            client.logger.debug(f"Generated missions: \n {json.dumps(
-            [
-                mission.to_dict(depth=1)
-                for mission in missions
-            ], 
-            indent=4
-        )}")
+                client.logger.debug(f"Generated mission: \n {json.dumps(
+                    mission.to_dict(depth=1), 
+                    indent=4
+                )}")
+            # end for
         # end with
     # end if saved answer
     else:
@@ -441,7 +444,7 @@ if __name__ == "__main__":
         # Try get new ongoing missions
         client.get_new_missions_for_user(
             mission_type=MissionPeriodType.ONGOING,
-            user_id=os.getenv('USER_ID'),
+            user=user,
             num_missions=2,
             debug=debug_mode
         )

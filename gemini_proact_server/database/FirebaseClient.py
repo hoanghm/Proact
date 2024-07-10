@@ -11,7 +11,8 @@ from google.api_core import exceptions
 import logging
 from attrs import define, field, NOTHING
 from typing import *
-from database.Mission import Mission, UserMission
+from database.Mission import Mission
+from database.User import User
 import uuid
 
 @define
@@ -42,20 +43,24 @@ class FirebaseClient:
         self.logger.info("Firebase client initialized")
     
 
-    def get_user_by_id(self, user_id:str) -> dict:
+    def get_user_by_id(self, user_id:str) -> User:
         '''
-        Get user information as dict given a `user_id`.
-
-        TODO use User class instead of dict.
+        Get user information as `User` instance given a `user_id`.
         '''
-        user = self.db.collection('User').document(user_id).get()
 
-        if not user.exists:
-            raise ValueError(f"No user found with user_id {user_id}")
+        user_snap = self.db.collection(User.table_name()).document(user_id).get()
 
-        matched_user = user.to_dict()
-        self.logger.info(f"Successfully retrieved user username={matched_user['username']} email={matched_user['email']}")
-        return matched_user
+        if not user_snap.exists:
+            raise ValueError(f"No user found with id={user_id}")
+
+        user_data = user_snap.to_dict()
+        # user document id is not necessarily stored as an attribute within the document
+        user_data.update({
+            'id': user_id
+        })
+        user = User.from_dict(user_data)
+        self.logger.info(f"Successfully retrieved {user}")
+        return user
     # end def
 
     def get_missions(self, mission_ids: List[str], depth: int=0) -> List[Mission]:
@@ -67,9 +72,9 @@ class FirebaseClient:
                 mission_raw = mission_ref.document(document_id=mission_id).get()
                 if mission_raw.exists:
                     mission = Mission.from_dict(mission_raw.to_dict(), steps_are_raw=False)
-                    if depth > 0 and len(mission.steps_id) > 0:
+                    if depth > 0 and len(mission.missions_id) > 0:
                         self.logger.debug(f'fetch steps until depth={depth} for {mission}')
-                        mission.steps_mission = self.get_missions(mission.steps_id, depth=depth-1)
+                        mission.missions_mission = self.get_missions(mission.missions_id, depth=depth-1)
                     
                     missions.append(mission)
                 else:
@@ -81,57 +86,48 @@ class FirebaseClient:
         return missions
     # end def
 
-    def get_user_past_missions(self, user_id: str, depth: int=0) -> List[Mission]:
-        '''Get user missions as list if dicts given a `user_id`.
+    def fetch_user_missions(self, user: User, depth: int=0):
+        '''Populate `user.missions_mission` by fetching from references.
 
         :depth: How far to follow `mission.steps` references. `0` means mission steps are not fetched.
         `1` means child steps are fetched, but grandchild steps are not fetched.
         '''
-
-        user_mission_ref = self.db.collection(UserMission.table_name())
-        query = user_mission_ref.where(filter=FieldFilter('userId', '==', user_id))
-
-        missions: List[Mission] = []
-        for user_mission_raw in query.stream():
-            user_mission = UserMission.from_dict(user_mission_raw.to_dict())
-            mission_singleton = self.get_missions([user_mission.mission_id], depth=depth)
-            if len(mission_singleton) > 0:
-                missions.append(mission_singleton[0])
-        # end for user mission
-
-        self.logger.info(f'fetched {len(missions)} missions for user {user_id}') 
-        return missions
+        
+        user.missions_mission = self.get_missions(
+            mission_ids=user.missions_id,
+            depth=depth
+        )
     # end def
 
     def add_mission_to_db(
         self, 
         mission: Mission, 
-        user_id: str,
+        user: User,
         skip_assignment: bool=False,
         debug: bool=False
-    ) -> Tuple[str, Optional[str]]:
+    ) -> str:
         '''Add a new mission, to Cloud Firestore as well as assignment to the given user.
 
         :param skip_assignment: Whether to skip creation of the user-mission entry (used to skip assignment for child missions
         if user is already assigned to parent mission).
         :param debug: If true, do not add mission to db.
-        :return: Generated mission id, user-mission id.
+        :return: Generated mission id.
         '''
 
         # persist steps
-        if len(mission.steps_mission) > 0:
-            self.logger.debug(f'mission {mission} as {len(mission.steps_mission)} steps')
+        if len(mission.missions_mission) > 0:
+            self.logger.debug(f'mission {mission} as {len(mission.missions_mission)} steps')
             # recursive call to first persist steps as child missions
-            for step_idx, step in enumerate(mission.steps_mission):
-                step_id, user_step_id = self.add_mission_to_db(
+            for step_idx, step in enumerate(mission.missions_mission):
+                step_id = self.add_mission_to_db(
                     mission=step,
-                    user_id=user_id,
+                    user=user,
                     skip_assignment=True,
                     debug=debug
                 )
 
                 # add generated step id to parent mission
-                mission.steps_id[step_idx] = step_id
+                mission.missions_id[step_idx] = step_id
             # end for
         else:
             self.logger.info(f'mission {mission} has no steps')
@@ -149,25 +145,24 @@ class FirebaseClient:
             self.logger.info(f"test mission {mission} was not added to db in debug mode")
         
         if not skip_assignment:
-            # create and persist user-mission
-            user_mission = UserMission.from_dict({
-                'userId': user_id,
-                'missionId': mission.id
-            })
-            if not debug:
-                user_mission_ref = self.db.collection(UserMission.table_name())
-                ts_dr = user_mission_ref.add(user_mission.to_dict())
-                doc_ref = ts_dr[1]
-                user_mission.id = doc_ref.id
-                self.logger.info(f'new user-mission {user_mission} added to db')
-            else:
-                user_mission.id = str(uuid.uuid1())
-                self.logger.info(f'test user-mission {user_mission} was not added to db in debug mode')
-        else:
-            self.logger.debug(f'skip user-mission for {mission}')
-            user_mission = None
+            user.add_mission(mission=mission)
 
-        return mission.id, (user_mission.id if user_mission is not None else None)
+            # update user in db
+            if not debug:
+                user_doc = self.db.collection(User.table_name()).document(user.id)
+                res = user_doc.set(
+                    document_data={
+                        'missions': user.missions_id
+                    },
+                    merge=True
+                )
+                self.logger.info(f'new mission added to user {user_doc.id} in db at {res.update_time}')
+            else:
+                self.logger.info(f'new mission in user {user} was not written to db in debug mode')
+        else:
+            self.logger.debug(f'skip user assignment for {mission}')
+
+        return mission.id
 # end class
 
 # test driver
@@ -183,5 +178,9 @@ if __name__ == "__main__":
 
     fb_client = FirebaseClient()
     user = fb_client.get_user_by_id(os.getenv('USER_ID'))
-    missions = fb_client.get_user_past_missions(os.getenv('USER_ID'), depth=2)
+    fb_client.fetch_user_missions(user, depth=2)
+    missions_str = '\n'.join([str(m) for m in user.missions_mission])
+    fb_client.logger.info(
+        f'user missions: \n{missions_str}'
+    )
 # end if __main__

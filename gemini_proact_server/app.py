@@ -49,7 +49,7 @@ def get_weekly_missions(user_id, num_missions):
     new_missions:List[Dict] 
     new_missions = gemini_client.get_new_missions_for_user(
         mission_type='weekly',
-        user_id=user_id,
+        user=user_id,
         num_missions=num_missions
     )
     response = {
@@ -63,7 +63,7 @@ def get_ongoing_missions(user_id, num_missions):
     new_missions:List[Dict] 
     new_missions = gemini_client.get_new_missions_for_user(
         mission_type='ongoing',
-        user_id=user_id,
+        user=user_id,
         num_missions=num_missions
     )
     response = {
