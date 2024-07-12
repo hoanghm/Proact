@@ -183,3 +183,6 @@ cython_debug/
 
 # visual studio code IDE settings
 .vscode/
+
+# secrets
+gemini_proact_server/service_account_keys/
