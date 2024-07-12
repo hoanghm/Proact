@@ -3,17 +3,21 @@ This class handles all interactions with Firebase including Cloud Firestore, Clo
 '''
 
 import os
+import logging
 import firebase_admin
 from firebase_admin import credentials, firestore
+
 from google.cloud.firestore import Client, DocumentReference, FieldFilter
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.api_core import exceptions
-import logging
+
+from .entities import Mission
+from .entities import User
+import uuid
+
 from attrs import define, field, NOTHING
 from typing import *
-from database.Mission import Mission
-from database.User import User
-import uuid
+
 
 @define
 class FirebaseClient:

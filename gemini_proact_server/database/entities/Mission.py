@@ -1,10 +1,14 @@
 import logging
 import json
-from typing import *
 from enum import Enum
 from datetime import datetime
-from utils import strings
-from database.Entity import Entity
+
+from .DatabaseEntity import DatabaseEntity
+from ...utils import strings
+
+from typing import *
+from typing_extensions import override
+
 
 logger = logging.getLogger('proact.database.mission')
 
@@ -23,7 +27,7 @@ class MissionPeriodType(Enum):
     '''
 # end class
 
-class HasMissions(Entity):
+class HasMissions(DatabaseEntity):
     '''An entity that contains missions as references whose objects can be fetched.
     '''
 
@@ -214,32 +218,5 @@ class Mission(HasMissions):
         })
 
         return d
-    # end def
-# end class
-
-class UserMission(Entity):
-    '''Represents assignments of users to missions. DEPRECATED.
-
-    Deprecated in favor of a simpler `User.missions` attribute, since we are not aiming to support multi user missions.
-
-    Supports json serialize and parse.
-    '''
-
-    @classmethod
-    def _attr_keys(cls) -> List[str]:
-        return super()._attr_keys() + [
-            'userId',
-            'missionId'
-        ]
-    # end def
-
-    @classmethod
-    def _summary_keys(cls) -> int:
-        return 3
-    # end def
-
-    def __init__(self, **kwargs):
-        self.userId: str = kwargs['userId']
-        self.missionId: str = kwargs['missionId']
     # end def
 # end class

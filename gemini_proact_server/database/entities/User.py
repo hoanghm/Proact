@@ -1,8 +1,8 @@
 from typing import *
 import logging
-from database.Entity import Entity
-from database.Question import UserQuestion
-from database.Mission import HasMissions
+from .DatabaseEntity import Entity
+from .Question import UserQuestion
+from .Mission import HasMissions
 
 logger = logging.getLogger('proact.database.user')
 

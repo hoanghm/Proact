@@ -1,9 +1,9 @@
-from typing import *
+from typing import Dict, List, Optional
 import logging
 
 logger = logging.getLogger('proact.database.entity')
 
-class Entity:
+class DatabaseEntity:
     '''Abstract superclass for representing db entities/records.
 
     See `_attr_keys` for attributes common to all subclasses.
@@ -40,7 +40,7 @@ class Entity:
     # end def
 
     @classmethod
-    def from_dict(cls, entity) -> 'Entity':
+    def from_dict(cls, entity:Dict) -> 'DatabaseEntity':
         '''Parse entity data as an instance.
 
         Default implementation just passes given dictionary as arguments to the constructor.
