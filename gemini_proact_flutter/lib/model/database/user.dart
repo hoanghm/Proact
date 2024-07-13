@@ -10,13 +10,14 @@ class ProactUser extends HasMissions {
   List<dynamic> questionnaire = [];
   final bool onboarded;
   ProactUser({
-    required this.email,
-    List<dynamic>? questionnaire,
-    required this.interests,
-    required this.occupation,
-    required this.others,
-    required this.username,
-    required this.onboarded,
+    required this.email, 
+    List<dynamic>? questionnaire, 
+    required this.interests, 
+    required this.occupation, 
+    required this.others, 
+    required this.username, 
+    required this.vaultedId, 
+    required this.onboarded, 
     required this.location,
     super.missionsId,
     super.missions
@@ -30,12 +31,12 @@ class ProactUser extends HasMissions {
       email: json[UserAttribute.email.name]! as String,
       username: json[UserAttribute.username.name]! as String,
       interests: json[UserAttribute.interests.name]! as List<dynamic>,
-      questionnaire: json[UserAttribute.questionnaire.name] as List<dynamic>,
+      questionnaire: json[UserAttribute.questionnaire.name] as List<dynamic>?,
       occupation: json[UserAttribute.occupation.name]! as String,
       onboarded: json[UserAttribute.onboarded.name]! as bool,
       location: json[UserAttribute.location.name]! as String,
       others: json[UserAttribute.others.name]! as List<dynamic>,
-      missionsId: json[UserAttribute.missions.name] as List<dynamic>?,
+      missionsId: json[UserAttribute.missions.name] as List<dynamic>,
   );
   @override
   Map<String, Object?> toJson({String? missionsAlias, int depth=0}) {

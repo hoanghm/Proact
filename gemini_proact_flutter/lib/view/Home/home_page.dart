@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/view/Mission/mission_home_page.dart';
 import 'package:gemini_proact_flutter/view/profile/profile.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 
@@ -41,9 +42,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: <Widget>[
-          const Center(
-            child: Text("Insert home page here")
-          ),
+          const MissionHomePage(),
           Profile(user: widget.user,)
         ][_currentPageIndex]
       ) 

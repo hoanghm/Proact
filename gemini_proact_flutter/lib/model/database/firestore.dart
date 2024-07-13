@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:gemini_proact_flutter/model/database/questionAnswer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +23,7 @@ final missionsRef = FirebaseFirestore.instance.collection(Mission.tableName).wit
   toFirestore: (mission, _) => mission.toJson()
 );
 
-// Get currently signed in user data, if applicable.
+/// Get currently signed in user data, if applicable.
 /// Returns corresponding db User for auth user, or `null` if not found.
 Future<ProactUser?> getUser({String? vaultedId}) async {
   DocumentSnapshot<ProactUser>? userDoc = await getUserDocument(vaultedId: vaultedId);
@@ -61,6 +59,7 @@ Future<DocumentSnapshot<ProactUser>?> getUserDocument({String? vaultedId}) async
     logger.warning('no db user for current firebase auth user');
     return null;
   }
+  
   logger.info('found db user id=${userQuery.id}');
   return userQuery;
 }
@@ -92,24 +91,6 @@ Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>>
       logger.warning('unable to find db user for update');
       return;
     }
-
-    // Update Question Answers
-    // TODO QuestionAnswer table is deprecated; replace w only User.questionnaire
-    WriteBatch batch = FirebaseFirestore.instance.batch();
-    CollectionReference questionAnswers = FirebaseFirestore.instance.collection("QuestionAnswer");
-    List<dynamic> questionnaireIds = [];
-    for (int i = 0; i < questionResponses.length; i++) {
-      String possibleDocId = userQuestionnaire[i]["id"];
-      DocumentReference questionAnswerRef = questionAnswers.doc(possibleDocId);
-      questionResponses[i]["id"] = questionAnswerRef.id;
-      questionnaireIds.add(questionAnswerRef.id);
-      batch.set(
-        questionAnswerRef, 
-        questionResponses[i],
-        SetOptions(merge: true)
-      );
-    }   
-    await batch.commit();
 
     // Update Profile Fields
     DocumentReference<ProactUser> docRef = userDoc.reference;     
