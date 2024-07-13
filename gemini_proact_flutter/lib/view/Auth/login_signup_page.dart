@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Auth/forgot_pass.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:gemini_proact_flutter/view/button/primary_button.dart';
-import 'package:gemini_proact_flutter/view/home/home_page.dart';
 import 'package:logging/logging.dart' show Logger, Level;
 import 'package:gemini_proact_flutter/view/input/my_textfield.dart' show InputTextField;
 import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail, signInWithGoogle, sendVerificationEmail, AuthException;

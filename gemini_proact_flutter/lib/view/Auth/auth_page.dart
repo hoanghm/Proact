@@ -6,6 +6,7 @@ import 'package:gemini_proact_flutter/view/Onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/home/home_page.dart';
 import 'package:logging/logging.dart' show Logger;
 import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser;
+import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show registerGoogleUser;
 
 final logger = Logger((AuthPage).toString());
 
@@ -29,11 +30,20 @@ class AuthPageState extends State<AuthPage> {
             logger.info('user logged in as name=${snapshot.data?.displayName} email=${snapshot.data?.email} verified=${snapshot.data?.emailVerified}');
             getUser()
               .then((possibleUser) {
-                if (possibleUser == null || !possibleUser.onboarded) {
-                  logger.info("To onboarding");
+                if (possibleUser == null) {
+                  logger.info("Create account for that user");
+                  logger.info(possibleUser);
+                  registerGoogleUser()
+                    .then((newUser) {
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => OnboardingForm(user: newUser))
+                      );
+                    });
+                } else if (!possibleUser.onboarded) {
                   Navigator.push(
                     context, 
-                    MaterialPageRoute(builder: (context) => OnboardingForm(user: possibleUser!))
+                    MaterialPageRoute(builder: (context) => OnboardingForm(user: possibleUser))
                   );
                 } else {
                   logger.info("To home page");

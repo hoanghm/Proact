@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/view/onboarding/onboarding_form.dart';
+import 'package:gemini_proact_flutter/view/Mission/mission_home_page.dart';
 import 'package:gemini_proact_flutter/view/profile/profile.dart';
 
 class HomePage extends StatefulWidget {
@@ -40,9 +40,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: <Widget>[
-          const Center(
-            child: Text("Insert home page here")
-          ),
+          const MissionHomePage(),
           const Profile()
         ][_currentPageIndex]
       ) 
