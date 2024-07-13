@@ -116,7 +116,6 @@ Future<void> registerWithEmail(String email, String password) async {
         others: [], 
         questionnaire: [],
         username: "", 
-        vaultedId: userId, 
         onboarded: false, 
         location: ""
       )

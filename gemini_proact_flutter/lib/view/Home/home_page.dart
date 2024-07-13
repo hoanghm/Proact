@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/view/onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/profile/profile.dart';
+import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final ProactUser user;
+  const HomePage({super.key, required this.user});
 
   @override
   State<HomePage> createState() {
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
           const Center(
             child: Text("Insert home page here")
           ),
-          const Profile()
+          Profile(user: widget.user,)
         ][_currentPageIndex]
       ) 
     );

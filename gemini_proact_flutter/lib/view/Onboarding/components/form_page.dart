@@ -73,7 +73,6 @@ class FormPageState extends State<FormPage> {
         "email": widget.user.email, 
         "questionnaire": widget.user.questionnaire, 
         "onboarded": true, 
-        "vaultedId": widget.user.vaultedId
       };
       /// Check Static Form Fields
       for (int i = 0; i < _staticTextControllers.length; i++) {
@@ -106,17 +105,17 @@ class FormPageState extends State<FormPage> {
         questionSubmission.add({"questionId": questionId, "answer": answer});
       }
       logger.info(interests);
-      if (_formKey.currentState!.validate()) {
-        updateUser(formSubmission, questionSubmission, widget.user.questionnaire)
-          .then((_) {
-            Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (context) => const Scaffold(
-                body: HomePage()
-              ))
-            );   
-          }); 
-      }
+      // if (_formKey.currentState!.validate()) {
+      //   updateUser(formSubmission, questionSubmission, widget.user.questionnaire)
+      //     .then((_) {
+      //       Navigator.push(
+      //         context, 
+      //         MaterialPageRoute(builder: (context) => const Scaffold(
+      //           body: HomePage()
+      //         ))
+      //       );   
+      //     }); 
+      // }
     }
     
     return SafeArea(

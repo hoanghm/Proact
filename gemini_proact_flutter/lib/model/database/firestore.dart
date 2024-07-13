@@ -25,13 +25,11 @@ final missionsRef = FirebaseFirestore.instance.collection(Mission.tableName).wit
   toFirestore: (mission, _) => mission.toJson()
 );
 
-/// Get currently signed in user data, if applicable.
-/// 
+// Get currently signed in user data, if applicable.
 /// Returns corresponding db User for auth user, or `null` if not found.
 Future<ProactUser?> getUser({String? vaultedId}) async {
   DocumentSnapshot<ProactUser>? userDoc = await getUserDocument(vaultedId: vaultedId);
   if (userDoc == null) return null;
-
   try {
     ProactUser currentUser = userDoc.data()!;
     logger.info("found db user username=${currentUser.username} for firebase auth user");
@@ -42,36 +40,29 @@ Future<ProactUser?> getUser({String? vaultedId}) async {
     return null;
   }
 }
-
 /// Get currently signed in user document reference, if applicable.
-/// 
-/// TODO ensure all db users have documentId = vaultedId, and simplify user fetch accordingly.
-/// 
-/// Returns corresponding db User reference for auth user, or `null` if not found.
+/// Returns corresponding DocumentSnapshot Reference for auth user, or `null` if not found.
 Future<DocumentSnapshot<ProactUser>?> getUserDocument({String? vaultedId}) async {
   if (vaultedId == null) {
     if (FirebaseAuth.instance.currentUser == null) {
       logger.info('no firebase auth user');
+      // Create user account (most likely in response to Google registration bypassing standard auth flow)
       return null;
     }
-
     final User user = FirebaseAuth.instance.currentUser!;
     logger.fine('fetch db user for firebase auth user email=${user.email} id=${user.uid}');
-
     vaultedId = user.uid;
   }
   else {
     logger.fine('fetch db user for id=$vaultedId');
   }
-
-  List<QueryDocumentSnapshot<ProactUser>> userQuery = await usersRef.where(UserAttribute.vaultedId.name, isEqualTo: vaultedId).get().then((snapshot) => snapshot.docs);
-  if (userQuery.isEmpty || !userQuery.first.exists) {
+  DocumentSnapshot<ProactUser> userQuery = await usersRef.doc(vaultedId).get();
+  if (!userQuery.exists) {
     logger.warning('no db user for current firebase auth user');
     return null;
   }
-  
-  logger.info('found db user id=${userQuery.first.id}');
-  return userQuery.first;
+  logger.info('found db user id=${userQuery.id}');
+  return userQuery;
 }
 
 Future<List<Question>> getOnboardingQuestions() async {
