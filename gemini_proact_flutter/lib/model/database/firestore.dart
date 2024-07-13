@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:gemini_proact_flutter/model/database/questionAnswer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -26,12 +24,10 @@ final missionsRef = FirebaseFirestore.instance.collection(Mission.tableName).wit
 );
 
 /// Get currently signed in user data, if applicable.
-/// 
 /// Returns corresponding db User for auth user, or `null` if not found.
 Future<ProactUser?> getUser({String? vaultedId}) async {
   DocumentSnapshot<ProactUser>? userDoc = await getUserDocument(vaultedId: vaultedId);
   if (userDoc == null) return null;
-
   try {
     ProactUser currentUser = userDoc.data()!;
     logger.info("found db user username=${currentUser.username} for firebase auth user");
@@ -44,14 +40,12 @@ Future<ProactUser?> getUser({String? vaultedId}) async {
 }
 
 /// Get currently signed in user document reference, if applicable.
-/// 
-/// TODO ensure all db users have documentId = vaultedId, and simplify user fetch accordingly.
-/// 
-/// Returns corresponding db User reference for auth user, or `null` if not found.
+/// Returns corresponding DocumentSnapshot Reference for auth user, or `null` if not found.
 Future<DocumentSnapshot<ProactUser>?> getUserDocument({String? vaultedId}) async {
   if (vaultedId == null) {
     if (FirebaseAuth.instance.currentUser == null) {
       logger.info('no firebase auth user');
+      // Create user account (most likely in response to Google registration bypassing standard auth flow)
       return null;
     }
 
@@ -63,15 +57,14 @@ Future<DocumentSnapshot<ProactUser>?> getUserDocument({String? vaultedId}) async
   else {
     logger.fine('fetch db user for id=$vaultedId');
   }
-
-  List<QueryDocumentSnapshot<ProactUser>> userQuery = await usersRef.where(UserAttribute.vaultedId.name, isEqualTo: vaultedId).get().then((snapshot) => snapshot.docs);
-  if (userQuery.isEmpty || !userQuery.first.exists) {
+  DocumentSnapshot<ProactUser> userQuery = await usersRef.doc(vaultedId).get();
+  if (!userQuery.exists) {
     logger.warning('no db user for current firebase auth user');
     return null;
   }
   
-  logger.info('found db user id=${userQuery.first.id}');
-  return userQuery.first;
+  logger.info('found db user id=${userQuery.id}');
+  return userQuery;
 }
 
 Future<List<Question>> getOnboardingQuestions() async {
@@ -101,24 +94,6 @@ Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>>
       logger.warning('unable to find db user for update');
       return;
     }
-
-    // Update Question Answers
-    // TODO QuestionAnswer table is deprecated; replace w only User.questionnaire
-    WriteBatch batch = FirebaseFirestore.instance.batch();
-    CollectionReference questionAnswers = FirebaseFirestore.instance.collection("QuestionAnswer");
-    List<dynamic> questionnaireIds = [];
-    for (int i = 0; i < questionResponses.length; i++) {
-      String possibleDocId = userQuestionnaire[i]["id"];
-      DocumentReference questionAnswerRef = questionAnswers.doc(possibleDocId);
-      questionResponses[i]["id"] = questionAnswerRef.id;
-      questionnaireIds.add(questionAnswerRef.id);
-      batch.set(
-        questionAnswerRef, 
-        questionResponses[i],
-        SetOptions(merge: true)
-      );
-    }   
-    await batch.commit();
 
     // Update Profile Fields
     DocumentReference<ProactUser> docRef = userDoc.reference;     

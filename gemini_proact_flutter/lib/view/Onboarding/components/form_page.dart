@@ -16,7 +16,7 @@ final logger = Logger((FormPage).toString());
 class FormPage extends StatefulWidget {
   final ProactUser user;
   const FormPage({super.key, required this.user});
-
+  
   @override
   FormPageState createState() {
     return FormPageState();
@@ -62,6 +62,7 @@ class FormPageState extends State<FormPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // logger.info(widget.user.username);
       loadOnboardingQuestions();
     });
   }
@@ -73,7 +74,6 @@ class FormPageState extends State<FormPage> {
         "email": widget.user.email, 
         "questionnaire": widget.user.questionnaire, 
         "onboarded": true, 
-        "vaultedId": widget.user.vaultedId
       };
       /// Check Static Form Fields
       for (int i = 0; i < _staticTextControllers.length; i++) {

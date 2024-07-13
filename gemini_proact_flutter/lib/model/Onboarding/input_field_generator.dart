@@ -3,7 +3,9 @@ import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/onboarding/input_field_type.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_text_field.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_toggle_button.dart';
+import 'package:logging/logging.dart' show Logger;
 
+final logger = Logger('OnboardingWidgetGenerator');
 Widget questionToFormField(Question question, List<TextEditingController> controllers, String initialText) {
   InputFieldTypes type = strToFieldType(question.type);
   switch (type) {
@@ -22,7 +24,11 @@ List<Widget> questionsToFormFields(List<Question> questions, List<TextEditingCon
   List<Widget> generatedFields = [];
   for (int i = 0; i < questions.length; i++) {
     Question question = questions[i];
-    String potentialInitialText = i < initialTexts.length ? initialTexts[i]["answer"] : "";
+    String potentialInitialText = "";
+    if (i < initialTexts.length && initialTexts[i] is Map<String, dynamic>) {
+      Map<String, dynamic> response = initialTexts[i];
+      potentialInitialText = response["answer"] ?? "";
+    }
     Widget generatedField = questionToFormField(question, controllers, potentialInitialText);
     generatedFields.add(generatedField);
     if (i != questions.length - 1) {

@@ -1,6 +1,8 @@
 import 'dart:core';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/model/database/firestore.dart';
 import 'package:logging/logging.dart' show Logger;
 import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -97,6 +99,28 @@ Future<void> loginWithEmail(String email, String password) async {
   }
 }
 
+/// Registers a person signing in for the first time via Google Sign in
+Future<ProactUser> registerGoogleUser() async {
+  try {
+    User user = FirebaseAuth.instance.currentUser!;
+    ProactUser newUser = ProactUser(
+      email: user.email!, 
+      interests: [], 
+      occupation: "", 
+      others: [], 
+      username: user.displayName ?? "", 
+      onboarded: false, 
+      location: ""
+    );
+    await usersRef 
+      .doc(user.uid)
+      .set(newUser);
+    return newUser;
+  } catch (err) {
+    throw ErrorDescription('$err');
+  }
+}
+
 /// Register new user account with email and password.
 Future<void> registerWithEmail(String email, String password) async {
   logger.info('create new user in FirebaseAuth');
@@ -108,17 +132,20 @@ Future<void> registerWithEmail(String email, String password) async {
     String userId = userCredential.user!.uid;
 
     // Create new User on Cloud Firestore
-    await usersRef.add(
+    await usersRef
+      .doc(userId)
+      .set(
       ProactUser(
         email: email, 
         interests: [], 
         occupation: "", 
         others: [], 
         questionnaire: [],
-        username: "", 
-        vaultedId: userId, 
+        username: "",
         onboarded: false, 
-        location: ""
+        location: "",
+        missions: [],
+        missionsId: []
       )
     );
 
@@ -193,6 +220,9 @@ Future<void> sendVerificationEmail() async {
   }
 }
 
+/// ASd
+
+
 /// Sign into Google
 Future<UserCredential> signInWithGoogle() async {
   GoogleSignIn googleSignIn = GoogleSignIn();
@@ -211,7 +241,7 @@ Future<UserCredential> signInWithGoogle() async {
     accessToken: googleAuth?.accessToken,
     idToken: googleAuth?.idToken,
   );
-
+  
   // Once signed in, return the UserCredential
   return await FirebaseAuth.instance.signInWithCredential(credential);
 }
