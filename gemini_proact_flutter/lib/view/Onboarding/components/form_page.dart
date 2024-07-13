@@ -106,17 +106,17 @@ class FormPageState extends State<FormPage> {
         questionSubmission.add({"questionId": questionId, "answer": answer});
       }
       logger.info(interests);
-      // if (_formKey.currentState!.validate()) {
-      //   updateUser(formSubmission, questionSubmission, widget.user.questionnaire)
-      //     .then((_) {
-      //       Navigator.push(
-      //         context, 
-      //         MaterialPageRoute(builder: (context) => const Scaffold(
-      //           body: HomePage()
-      //         ))
-      //       );   
-      //     }); 
-      // }
+      if (_formKey.currentState!.validate()) {
+        updateUser(formSubmission, questionSubmission, widget.user.questionnaire)
+          .then((possibleUser) {
+            Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (context) => Scaffold(
+                body: HomePage(user: possibleUser!,)
+              ))
+            );   
+          }); 
+      }
     }
     
     return SafeArea(

@@ -84,18 +84,19 @@ Future<List<Question>> getOnboardingQuestions() async {
 /// @param `questionResponses` Is a list of objects, each having `questionId` and `answer:string`.
 /// 
 /// TODO enforce type/attributes of each question response.
-Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>> questionResponses, List<dynamic> userQuestionnaire) async {
+Future<ProactUser?> updateUser(Map<String, Object> newFields, List<Map<String, Object>> questionResponses, List<dynamic> userQuestionnaire) async {
   try {
     DocumentSnapshot<ProactUser>? userDoc = await getUserDocument();
     if (userDoc == null) {
       logger.warning('unable to find db user for update');
-      return;
+      throw ErrorDescription('User not found');
     }
 
     // Update Profile Fields
     DocumentReference<ProactUser> docRef = userDoc.reference;     
     newFields[UserAttribute.questionnaire.name] = questionResponses;
     await docRef.update(newFields);
+    return getUser();
   }
   catch (err) {
     throw ErrorDescription('$err');

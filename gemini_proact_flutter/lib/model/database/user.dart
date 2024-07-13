@@ -16,7 +16,6 @@ class ProactUser extends HasMissions {
     required this.occupation, 
     required this.others, 
     required this.username, 
-    required this.vaultedId, 
     required this.onboarded, 
     required this.location,
     super.missionsId,

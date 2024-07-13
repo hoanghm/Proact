@@ -4,7 +4,7 @@ import 'package:gemini_proact_flutter/view/profile/profile.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 
 class HomePage extends StatefulWidget {
-  final ProactUser user;
+  final ProactUser? user;
   const HomePage({super.key, required this.user});
 
   @override
@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: <Widget>[
           const MissionHomePage(),
-          Profile(user: widget.user,)
+          Profile(user: widget.user!,)
         ][_currentPageIndex]
       ) 
     );
