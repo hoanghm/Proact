@@ -32,7 +32,6 @@ class AuthPageState extends State<AuthPage> {
               .then((possibleUser) {
                 if (possibleUser == null) {
                   logger.info("Create account for that user");
-                  logger.info(possibleUser);
                   registerGoogleUser()
                     .then((newUser) {
                       Navigator.push(

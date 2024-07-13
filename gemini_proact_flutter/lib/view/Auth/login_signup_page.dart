@@ -1,11 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/view/Auth/forgot_pass.dart';
+import 'package:gemini_proact_flutter/view/Home/gemini_client_demo_page.dart';
+import 'package:gemini_proact_flutter/view/Onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:gemini_proact_flutter/view/button/primary_button.dart';
 import 'package:logging/logging.dart' show Logger, Level;
 import 'package:gemini_proact_flutter/view/input/my_textfield.dart' show InputTextField;
 import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show loginWithEmail, registerWithEmail, signInWithGoogle, sendVerificationEmail, AuthException;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser;
 
 final logger = Logger((LoginSignupPage).toString());
 
@@ -145,17 +149,26 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         if (user != null && !user.emailVerified) {
           await sendVerificationEmail();
           // hideLoadingCircle();
-          logger.info("user is verified");
+          logger.info("user is not verified");
           showCheckEmailMessage();
         } else {
           emailController.clear();
           passwordController.clear();
           confirmPasswordController.clear();
 
-          // TODO check if user finished onboarding questions and conditionally navigate
-          //  to onboarding page or home page.
-          // logger.info('navigate to home page');
-          // navigateToPage(const HomePage());
+          ProactUser? userData = await getUser();
+          if (userData == null) {
+            logger.info("Create new account from login/signup, THEN to onboarding");
+            // TODO: If for any reason an issue pops up where the created profile is not made yet, do something about that future me -ET
+          } 
+          else if (!userData.onboarded) {
+            logger.info("To onboarding from login/signup");
+            navigateToPage(OnboardingForm(user: userData));
+          }
+          else {
+            logger.info("To home page from login/signup");
+            navigateToPage(HomePage());
+          }
         }
       }
       on AuthException catch (e) {
@@ -202,9 +215,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   void doGoogleLogin() async {
     try {
       await signInWithGoogle();
-      // TODO check if user finished onboarding questions and conditionally navigate
-      //  to onboarding page or home page.
-      // navigateToPage(const HomePage());
     }
     on AuthException catch (e) {
       logger.severe(e.toString(), e);
@@ -332,8 +342,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                           imagePath: 'lib/images/google.png', 
                           text: 'Continue with Google', 
                           onPressed: () {
-                            logger.info('use external account - google');
-                            // TODO handle external google account login
                             doGoogleLogin();
                           }
                         ),

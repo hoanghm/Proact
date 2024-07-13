@@ -132,7 +132,9 @@ Future<void> registerWithEmail(String email, String password) async {
     String userId = userCredential.user!.uid;
 
     // Create new User on Cloud Firestore
-    await usersRef.add(
+    await usersRef
+      .doc(userId)
+      .set(
       ProactUser(
         email: email, 
         interests: [], 
@@ -217,6 +219,9 @@ Future<void> sendVerificationEmail() async {
     await user.sendEmailVerification();
   }
 }
+
+/// ASd
+
 
 /// Sign into Google
 Future<UserCredential> signInWithGoogle() async {
