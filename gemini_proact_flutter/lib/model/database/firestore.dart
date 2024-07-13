@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:gemini_proact_flutter/model/database/questionAnswer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart';
+import 'package:gemini_proact_flutter/model/database/mission.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart' show Logger;
 
@@ -17,17 +20,27 @@ final questionAnswerRef = FirebaseFirestore.instance.collection("QuestionAnswer"
 final usersRef = FirebaseFirestore.instance.collection(ProactUser.tableName).withConverter<ProactUser>(
   fromFirestore: (snapshot, _) => ProactUser.fromJson(snapshot.data()!), 
   toFirestore: (user, _) => user.toJson());
+final missionsRef = FirebaseFirestore.instance.collection(Mission.tableName).withConverter<Mission>(
+  fromFirestore: (snapshot, _) => Mission.fromJson(snapshot.data()!),
+  toFirestore: (mission, _) => mission.toJson()
+);
 
 /// Get currently signed in user data, if applicable.
 /// 
 /// Returns corresponding db User for auth user, or `null` if not found.
-Future<ProactUser?> getUser() async {
-  DocumentSnapshot<ProactUser>? userDoc = await getUserDocument();
+Future<ProactUser?> getUser({String? vaultedId}) async {
+  DocumentSnapshot<ProactUser>? userDoc = await getUserDocument(vaultedId: vaultedId);
   if (userDoc == null) return null;
 
-  ProactUser currentUser = userDoc.data()!;
-  logger.info("found db user username=${currentUser.username} for firebase auth user");
-  return currentUser;
+  try {
+    ProactUser currentUser = userDoc.data()!;
+    logger.info("found db user username=${currentUser.username} for firebase auth user");
+    return currentUser;
+  }
+  catch (error) {
+    logger.severe('failed to parse db user $error');
+    return null;
+  }
 }
 
 /// Get currently signed in user document reference, if applicable.
@@ -35,20 +48,28 @@ Future<ProactUser?> getUser() async {
 /// TODO ensure all db users have documentId = vaultedId, and simplify user fetch accordingly.
 /// 
 /// Returns corresponding db User reference for auth user, or `null` if not found.
-Future<DocumentSnapshot<ProactUser>?> getUserDocument() async {
-  if (FirebaseAuth.instance.currentUser == null) {
-    logger.info('no firebase auth user');
-    return null;
+Future<DocumentSnapshot<ProactUser>?> getUserDocument({String? vaultedId}) async {
+  if (vaultedId == null) {
+    if (FirebaseAuth.instance.currentUser == null) {
+      logger.info('no firebase auth user');
+      return null;
+    }
+
+    final User user = FirebaseAuth.instance.currentUser!;
+    logger.fine('fetch db user for firebase auth user email=${user.email} id=${user.uid}');
+
+    vaultedId = user.uid;
+  }
+  else {
+    logger.fine('fetch db user for id=$vaultedId');
   }
 
-  final User user = FirebaseAuth.instance.currentUser!;
-  logger.fine('fetch db user for firebase auth user email=${user.email} id=${user.uid}');
-  List<QueryDocumentSnapshot<ProactUser>> userQuery = await usersRef.where(UserAttribute.vaultedId.name, isEqualTo: user.uid).get().then((snapshot) => snapshot.docs);
-  if (userQuery.isEmpty) {
+  List<QueryDocumentSnapshot<ProactUser>> userQuery = await usersRef.where(UserAttribute.vaultedId.name, isEqualTo: vaultedId).get().then((snapshot) => snapshot.docs);
+  if (userQuery.isEmpty || !userQuery.first.exists) {
     logger.warning('no db user for current firebase auth user');
     return null;
   }
-
+  
   logger.info('found db user id=${userQuery.first.id}');
   return userQuery.first;
 }
@@ -107,4 +128,46 @@ Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>>
   catch (err) {
     throw ErrorDescription('$err');
   }
+}
+
+/// Fetch missions by id.
+/// 
+/// @param `depth` How deep to follow recursive child mission references. `0` means
+/// child missions will not be fetched.
+Future<List<Mission>> getMissions(List<String> missionIds, {int depth = 0}) async {
+  List<Mission> missions = [];
+  logger.fine('fetch missions ${missionIds.join(',')} to depth $depth');
+
+  await Future.forEach<String>(missionIds, (missionId) async {
+    final missionDoc = await missionsRef.doc(missionId).get();
+    
+    if (missionDoc.exists) {
+      Mission mission = missionDoc.data()!;
+      missions.add(mission);
+
+      if (depth > 0 && mission.missionsId.isNotEmpty) {
+        mission.missions = await getMissions(mission.missionsId, depth: depth-1);
+      }
+    }
+    else {
+      logger.severe('did not find mission $missionId in database');
+    }
+  });
+
+  return missions;
+}
+
+/// Fetch missions assigned to the given user.
+/// 
+/// @param `depth` How deep to follow recursive child mission references. Works
+/// same way as `getMissions(depth)`.
+Future<void> getUserMissions({ProactUser? user, int depth = 0}) async {
+  user = user ?? await getUser();
+  if (user == null) {
+    logger.warning('cannot fetch missions for missing user');
+    return;
+  }
+  logger.fine('fetch missions for user $user to depth $depth');
+
+  user.missions = await getMissions(user.missionsId, depth: depth);
 }
