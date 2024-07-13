@@ -1,64 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/onboarding/input_field_type.dart';
-import 'package:gemini_proact_flutter/view/input/my_textfield.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_text_field.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_toggle_button.dart';
 
-Widget generateFormField(String question, String required, InputFieldTypes type, List<TextEditingController> controllers) {
-  switch (type) {
-    case InputFieldTypes.yesNo:
-      final newController = TextEditingController();
-      controllers.add(newController);
-      return FormToggleButton(question: question, controller: newController);
-    default:
-      final newController = TextEditingController();
-      bool isRequired = required == "yes";
-      controllers.add(newController);
-      return FormTextField(question: question, fieldType: getKeyboardType(type), controller: newController, required: isRequired);
-  }
-}
-
-Widget questionToFormField(Question question, List<TextEditingController> controllers) {
+Widget questionToFormField(Question question, List<TextEditingController> controllers, String initialText) {
   InputFieldTypes type = strToFieldType(question.type);
   switch (type) {
     case InputFieldTypes.yesNo:
       final newController = TextEditingController();
       controllers.add(newController);
-      return FormToggleButton(question: question.title, controller: newController);
+      return FormToggleButton(question: question.title, controller: newController, initialStatus: initialText == "yes");
     default:
       final newController = TextEditingController();
       controllers.add(newController);
-      return FormTextField(question: question.title, fieldType: getKeyboardType(type), controller: newController, required: question.mandatory);
+      return FormTextField(question: question.title, initialText: initialText, fieldType: getKeyboardType(type), controller: newController, required: question.mandatory);
   }
 }
 
-List<Widget> questionsToFormFields(List<Question> questions, List<TextEditingController> controllers) {
+List<Widget> questionsToFormFields(List<Question> questions, List<TextEditingController> controllers, List<dynamic> initialTexts) {
   List<Widget> generatedFields = [];
   for (int i = 0; i < questions.length; i++) {
     Question question = questions[i];
-    Widget generatedField = questionToFormField(question, controllers);
+    String potentialInitialText = i < initialTexts.length ? initialTexts[i]["answer"] : "";
+    Widget generatedField = questionToFormField(question, controllers, potentialInitialText);
     generatedFields.add(generatedField);
     if (i != questions.length - 1) {
-      generatedFields.add(const SizedBox(height: 10));
+      generatedFields.add(const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 10)));
     }   
-  }
-  
-  return generatedFields;
-}
-
-List<Widget> generateFormFields(List<Map<String, String>> fields, List<TextEditingController> controllers) {
-  List<Widget> generatedFields = [];
-  for (int i = 0; i < fields.length; i++) {
-    dynamic field = fields[i];  
-    String question = field['question']!;
-    String required = field['required'] == null ? "no" : field["required"];
-    InputFieldTypes type = strToFieldType(field['type']!);
-    Widget widget = generateFormField(question, required, type, controllers);
-    generatedFields.add(widget);
-    if (i != fields.length - 1) {
-      generatedFields.add(const SizedBox(height: 10));
-    }
   }
   
   return generatedFields;

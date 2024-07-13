@@ -36,6 +36,7 @@ class ProfileState extends State<Profile> {
                   borderRadius: BorderRadius.circular(25),
                   child: GestureDetector(
                     onTap: () {
+                      Navigator.of(context).popUntil((route) => route.isFirst); // Pop to AuthPage()
                       signOutUser();
                     },
                     child: const Icon(Icons.logout, size: 50)
