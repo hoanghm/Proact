@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
-        actions: [IconButton(onPressed: signUserOut, icon: Icon(Icons.logout))]
+        actions: [IconButton(onPressed: signUserOut, icon: const Icon(Icons.logout))]
       ),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it

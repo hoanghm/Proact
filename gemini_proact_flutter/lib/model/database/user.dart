@@ -1,17 +1,8 @@
-class ProactUser {
-  ProactUser({required this.email, required this.questionnaire, required this.interests, required this.occupation, required this.others, required this.username, required this.vaultedId, required this.onboarded, required this.location});
-   ProactUser.fromJson(Map<String, Object?> json)
-    : this(
-        email: json['email']! as String,
-        username: json['username']! as String,
-        interests: json['interests']! as List<dynamic>,
-        questionnaire: json['questionnaire']! as List<dynamic>,
-        occupation: json['occupation']! as String,
-        onboarded: json['onboarded']! as bool,
-        location: json['location']! as String,
-        vaultedId: json['vaultedId']! as String,
-        others: json['others']! as List<dynamic>,
-    );
+import 'package:gemini_proact_flutter/model/database/mission.dart';
+
+class ProactUser extends HasMissions {
+  static const String tableName = 'User';
+
   final String email;
   final String occupation;
   final String username;
@@ -19,26 +10,76 @@ class ProactUser {
   final String location;
   final List<dynamic> others;
   final List<dynamic> interests;
-  final List<dynamic> questionnaire;
+  List<dynamic> questionnaire = [];
   final bool onboarded;
-   Map<String, Object?> toJson() {
-    return {
-      'email': email,
-      'occupation': occupation,
-      'username': username,
-      'vaultedId': vaultedId,
-      'location': location,
-      'others': others,
-      'interests': interests,
-      'onboarded': onboarded,
-      'questionnaire': questionnaire
-    };
+
+  ProactUser({
+    required this.email, 
+    List<dynamic>? questionnaire, 
+    required this.interests, 
+    required this.occupation, 
+    required this.others, 
+    required this.username, 
+    required this.vaultedId, 
+    required this.onboarded, 
+    required this.location,
+    super.missionsId,
+    super.missions
+  }) {
+    if (questionnaire != null && questionnaire.isNotEmpty) {
+      this.questionnaire = questionnaire;
+    } 
+  }
+  
+  ProactUser.fromJson(Map<String, Object?> json)
+  : this(
+      email: json[UserAttribute.email.name]! as String,
+      username: json[UserAttribute.username.name]! as String,
+      interests: json[UserAttribute.interests.name]! as List<dynamic>,
+      questionnaire: json[UserAttribute.questionnaire.name] as List<dynamic>?,
+      occupation: json[UserAttribute.occupation.name]! as String,
+      onboarded: json[UserAttribute.onboarded.name]! as bool,
+      location: json[UserAttribute.location.name]! as String,
+      vaultedId: json[UserAttribute.vaultedId.name]! as String,
+      others: json[UserAttribute.others.name]! as List<dynamic>,
+      missionsId: json[UserAttribute.missions.name] as List<dynamic>,
+  );
+  
+  @override
+   Map<String, Object?> toJson({String? missionsAlias, int depth=0}) {
+    var map = super.toJson(missionsAlias: missionsAlias ?? UserAttribute.missions.name, depth: depth);
+    map.addAll({
+      UserAttribute.email.name: email,
+      UserAttribute.occupation.name: occupation,
+      UserAttribute.username.name: username,
+      UserAttribute.vaultedId.name: vaultedId,
+      UserAttribute.location.name: location,
+      UserAttribute.others.name: others,
+      UserAttribute.interests.name: interests,
+      UserAttribute.onboarded.name: onboarded,
+      UserAttribute.questionnaire.name: questionnaire
+    });
+
+    return map;
+  }
+
+  @override
+  String toString() {
+    return '$tableName[${UserAttribute.username}=$username ${UserAttribute.email}=$email]';
   }
 }
 
 enum UserAttribute {
   email('email'),
-  vaultedId('vaultedId');
+  username('username'),
+  interests('interests'),
+  questionnaire('questionnaire'),
+  occupation('occupation'),
+  onboarded('onboarded'),
+  location('location'),
+  vaultedId('vaultedId'),
+  missions('missions'),
+  others('others');
 
   final String name;
 
@@ -48,8 +89,4 @@ enum UserAttribute {
   String toString() {
     return name;
   }
-}
-
-class UserTable {
-  static const String name = 'User';
 }
