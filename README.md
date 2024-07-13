@@ -68,11 +68,31 @@ Now you can test sending requests to `https://localhost:$host_port` using the lo
 
 To skip the local container deployment for a full mock of how it would run in Google Cloud Run:
 
+<!--TODO cli_wrapper no longer exists -->
+
 ```sh
 cd gemini_proact_server && python cli_wrapper.py
 ```
 
 and test sending requests to `https://localhost:$server_port`.
+
+## Backend test components
+
+Many individual components have some live tests written when called as entrypoints.
+
+### `FirebaseClient`
+
+```sh
+cd gemini_proact_server
+python -m database.FirebaseClient
+```
+
+### `GeminiClient`
+
+```sh
+cd gemini_proact_server
+python -m GeminiClient
+```
 
 ## Deploy python-flask backend
 
