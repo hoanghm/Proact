@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/view/Auth/login_signup_page.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/home/home_page.dart';
@@ -30,13 +31,13 @@ class AuthPageState extends State<AuthPage> {
               .then((possibleUser) {
                 if (possibleUser == null || !possibleUser.onboarded) {
                   logger.info("To onboarding");
-                  Navigator.pushReplacement(
+                  Navigator.push(
                     context, 
-                    MaterialPageRoute(builder: (context) => const OnboardingForm())
+                    MaterialPageRoute(builder: (context) => OnboardingForm(user: possibleUser!))
                   );
                 } else {
                   logger.info("To home page");
-                  Navigator.pushReplacement(
+                  Navigator.push(
                     context, 
                     MaterialPageRoute(builder: (context) => const HomePage())
                   );

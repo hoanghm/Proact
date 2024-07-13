@@ -7,14 +7,14 @@ class Question {
         type: json['type']! as String,
         onboard: json['onboard']! as bool,
         mandatory: json['mandatory']! as bool,
-        id: json['id']! as int
+        id: json['id']! as String
     );
   final String description;
   final String title;
   final String type;
   final bool onboard;
   final bool mandatory;
-  final int id;
+  final String id;
   Map<String, Object?> toJson() {
     return {
       'description': description,

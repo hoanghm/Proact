@@ -70,7 +70,7 @@ class ForgotPassState extends State<ForgotPass> {
                 )
               ),
             ),
-            const SizedBox(height: 10),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 10)),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Container(
@@ -84,7 +84,7 @@ class ForgotPassState extends State<ForgotPass> {
                 )
               ),
             ),
-            const SizedBox(height: 20),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 10)),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
               child: TextFormField(
@@ -108,7 +108,7 @@ class ForgotPassState extends State<ForgotPass> {
                 )
               ),
             ),
-            const SizedBox(height: 25),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 0, 0, 25)),
             Row(
               children: [
                 Expanded(

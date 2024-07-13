@@ -3,10 +3,11 @@ import 'package:flutter/services.dart';
 
 class FormTextField extends StatefulWidget {
   final String question; 
+  final String initialText;
   final bool required;
   final TextInputType fieldType;
   final TextEditingController controller;
-  const FormTextField({super.key, required this.question, required this.fieldType, required this.controller, required this.required});
+  const FormTextField({super.key, required this.question, required this.initialText, required this.fieldType, required this.controller, required this.required});
   
   @override
   FormTextFieldState createState() {
@@ -18,6 +19,12 @@ class FormTextFieldState extends State<FormTextField> {
   final Color lightGrey = const Color.fromRGBO(152, 152, 152, 1);
   String textInput = "";
   
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.text = widget.initialText;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(

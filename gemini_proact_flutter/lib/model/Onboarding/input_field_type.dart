@@ -5,7 +5,8 @@ enum InputFieldTypes {
   name,
   email,
   address,
-  shortAnswer
+  shortAnswer,
+  
 }
 
 InputFieldTypes strToFieldType(String type) {
