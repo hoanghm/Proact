@@ -14,12 +14,28 @@ final questionRef = FirebaseFirestore.instance.collection('Question').withConver
 final questionAnswerRef = FirebaseFirestore.instance.collection("QuestionAnswer").withConverter<QuestionAnswer>(
   fromFirestore: (snapshot, _) => QuestionAnswer.fromJson(snapshot.data()!),
   toFirestore: (question, _) => question.toJson());
-final usersRef = FirebaseFirestore.instance.collection("User").withConverter<ProactUser>(
+final usersRef = FirebaseFirestore.instance.collection(ProactUser.tableName).withConverter<ProactUser>(
   fromFirestore: (snapshot, _) => ProactUser.fromJson(snapshot.data()!), 
   toFirestore: (user, _) => user.toJson());
 
-// Get currently signed in user (if they are even signed in at all)
+/// Get currently signed in user data, if applicable.
+/// 
+/// Returns corresponding db User for auth user, or `null` if not found.
 Future<ProactUser?> getUser() async {
+  DocumentSnapshot<ProactUser>? userDoc = await getUserDocument();
+  if (userDoc == null) return null;
+
+  ProactUser currentUser = userDoc.data()!;
+  logger.info("found db user username=${currentUser.username} for firebase auth user");
+  return currentUser;
+}
+
+/// Get currently signed in user document reference, if applicable.
+/// 
+/// TODO ensure all db users have documentId = vaultedId, and simplify user fetch accordingly.
+/// 
+/// Returns corresponding db User reference for auth user, or `null` if not found.
+Future<DocumentSnapshot<ProactUser>?> getUserDocument() async {
   if (FirebaseAuth.instance.currentUser == null) {
     logger.info('no firebase auth user');
     return null;
@@ -27,15 +43,14 @@ Future<ProactUser?> getUser() async {
 
   final User user = FirebaseAuth.instance.currentUser!;
   logger.fine('fetch db user for firebase auth user email=${user.email} id=${user.uid}');
-  List<QueryDocumentSnapshot<ProactUser>> userQuery = await usersRef.where('vaultedId', isEqualTo: user.uid).get().then((snapshot) => snapshot.docs);
+  List<QueryDocumentSnapshot<ProactUser>> userQuery = await usersRef.where(UserAttribute.vaultedId.name, isEqualTo: user.uid).get().then((snapshot) => snapshot.docs);
   if (userQuery.isEmpty) {
     logger.warning('no db user for current firebase auth user');
     return null;
   }
-  
-  ProactUser currentUser = userQuery[0].data();
-  logger.info("found db user username=${currentUser.username} for firebase auth user");
-  return currentUser;
+
+  logger.info('found db user id=${userQuery.first.id}');
+  return userQuery.first;
 }
 
 Future<List<Question>> getOnboardingQuestions() async {
@@ -53,19 +68,21 @@ Future<List<Question>> getOnboardingQuestions() async {
   return snapshotQuestions;
 }
 
-/// Update User fields
+/// Update User fields.
+/// 
+/// @param `questionResponses` Is a list of objects, each having `questionId` and `answer:string`.
+/// 
+/// TODO enforce type/attributes of each question response.
 Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>> questionResponses, List<dynamic> userQuestionnaire) async {
   try {
-    if (FirebaseAuth.instance.currentUser == null) {
+    DocumentSnapshot<ProactUser>? userDoc = await getUserDocument();
+    if (userDoc == null) {
+      logger.warning('unable to find db user for update');
       return;
     }
 
-    final User user = FirebaseAuth.instance.currentUser!;
-    QuerySnapshot<ProactUser> userQuery = await usersRef.where('vaultedId', isEqualTo: user.uid).get();
-    if (userQuery.docs.isEmpty) {
-      return;
-    }
-    /// Update Question Answers
+    // Update Question Answers
+    // TODO QuestionAnswer table is deprecated; replace w only User.questionnaire
     WriteBatch batch = FirebaseFirestore.instance.batch();
     CollectionReference questionAnswers = FirebaseFirestore.instance.collection("QuestionAnswer");
     List<dynamic> questionnaireIds = [];
@@ -80,12 +97,14 @@ Future<void> updateUser(Map<String, Object> newFields, List<Map<String, Object>>
         SetOptions(merge: true)
       );
     }   
-    await batch.commit(); 
-    /// Update Profile Fields
-    DocumentReference<ProactUser> docRef = userQuery.docs.first.reference;     
-    newFields["questionnaire"] = questionResponses;
+    await batch.commit();
+
+    // Update Profile Fields
+    DocumentReference<ProactUser> docRef = userDoc.reference;     
+    newFields[UserAttribute.questionnaire.name] = questionResponses;
     await docRef.update(newFields);
-  } catch (err) {
+  }
+  catch (err) {
     throw ErrorDescription('$err');
   }
 }
