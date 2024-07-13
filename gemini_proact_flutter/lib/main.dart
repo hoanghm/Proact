@@ -20,7 +20,7 @@ void main() async {
       stackTrace: record.stackTrace,
       time: record.time
     );
-    // debugPrint('${record.level.name}: ${record.message}\t@${record.loggerName}');
+    debugPrint('${record.level.name}: ${record.message}\t@${record.loggerName}');
   });
   logger.info('log level is ${Logger.root.level.name}[${Logger.root.level.value}]');
 

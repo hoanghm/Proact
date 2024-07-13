@@ -4,6 +4,7 @@ import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/view/Auth/login_signup_page.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/home/home_page.dart';
+import 'package:gemini_proact_flutter/view/profile/profile.dart';
 import 'package:logging/logging.dart' show Logger;
 import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser;
 import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show registerGoogleUser;
@@ -48,7 +49,7 @@ class AuthPageState extends State<AuthPage> {
                   logger.info("To home page");
                   Navigator.push(
                     context, 
-                    MaterialPageRoute(builder: (context) => const HomePage())
+                    MaterialPageRoute(builder: (context) => HomePage(user: possibleUser!))
                   );
                 }
               })
