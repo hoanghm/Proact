@@ -4,6 +4,7 @@ This class handles all interactions with Firebase including Cloud Firestore, Clo
 
 import os
 import logging
+import uuid
 import firebase_admin
 from firebase_admin import credentials, firestore
 
@@ -13,7 +14,6 @@ from google.api_core import exceptions
 
 from .entities import Mission
 from .entities import User
-import uuid
 
 from attrs import define, field, NOTHING
 from typing import *
@@ -65,7 +65,7 @@ class FirebaseClient:
         user = User.from_dict(user_data)
         self.logger.info(f"Successfully retrieved {user}")
         return user
-    # end def
+
 
     def get_missions(self, mission_ids: List[str], depth: int=0) -> List[Mission]:
         missions = []
@@ -85,10 +85,8 @@ class FirebaseClient:
                     self.logger.error(f'failed to fetch mission {mission_id}')
             except exceptions.InvalidArgument as e:
                 self.logger.error(f'failed to fetch mission {mission_id}. {e}')
-        # end for mission step
-
         return missions
-    # end def
+
 
     def fetch_user_missions(self, user: User, depth: int=0):
         '''Populate `user.missions_mission` by fetching from references.
@@ -101,7 +99,7 @@ class FirebaseClient:
             mission_ids=user.missions_id,
             depth=depth
         )
-    # end def
+
 
     def add_mission_to_db(
         self, 
@@ -132,7 +130,6 @@ class FirebaseClient:
 
                 # add generated step id to parent mission
                 mission.missions_id[step_idx] = step_id
-            # end for
         else:
             self.logger.info(f'mission {mission} has no steps')
 
@@ -178,13 +175,12 @@ if __name__ == "__main__":
     init_logging()
 
     # Set the level of all loggers
-    set_global_logging_level(logging.DEBUG)
+    set_global_logging_level(logging.INFO)
 
     fb_client = FirebaseClient()
-    user = fb_client.get_user_by_id(os.getenv('USER_ID'))
+    user = fb_client.get_user_by_id('NdarW4HYFSbzhaU9xnLG')
     fb_client.fetch_user_missions(user, depth=2)
     missions_str = '\n'.join([str(m) for m in user.missions_mission])
     fb_client.logger.info(
         f'user missions: \n{missions_str}'
     )
-# end if __main__

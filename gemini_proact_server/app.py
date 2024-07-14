@@ -47,8 +47,7 @@ def submit_prompt():
 @app.route('/get_weekly_missions/<user_id>/<num_missions>', methods=['GET'])
 def get_weekly_missions(user_id, num_missions):
     new_missions:List[Dict] 
-    new_missions = gemini_client.get_new_missions_for_user(
-        mission_type='weekly',
+    new_missions = gemini_client.generate_weekly_missions(
         user=user_id,
         num_missions=num_missions
     )

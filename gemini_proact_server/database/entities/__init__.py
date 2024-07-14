@@ -1,7 +1,8 @@
-from .Mission import Mission
+from .Mission import Mission, MissionPeriodType
 from .User import User
 
 __all__ = [
-    'Mission',
-    'User'
+    "Mission",
+    "User",
+    "MissionPeriodType"
 ]

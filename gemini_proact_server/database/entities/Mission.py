@@ -4,7 +4,7 @@ from enum import Enum
 from datetime import datetime
 
 from .DatabaseEntity import DatabaseEntity
-from ...utils import strings
+from utils import strings
 
 from typing import *
 from typing_extensions import override
@@ -87,10 +87,7 @@ class HasMissions(DatabaseEntity):
                 mission.to_dict(depth=depth-1)
                 for mission in self.missions_mission
             ]
-        # end if depth
-
         return d
-    # end def
 
     def add_mission(self, mission: 'Mission') -> bool:
         '''Add a mission to this parent.
@@ -105,8 +102,7 @@ class HasMissions(DatabaseEntity):
             self.missions_id.append(mission.id)
             self.missions_mission.append(mission)
             return True
-    # end def
-# end class
+
 
 class Mission(HasMissions):
     '''Represents a single mission/task.
