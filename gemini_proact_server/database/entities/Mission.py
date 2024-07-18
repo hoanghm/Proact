@@ -19,13 +19,17 @@ class MissionStatus(Enum):
 # end class
 
 class MissionPeriodType(Enum):
-    WEEK = 'weekly'
+    WEEKLY = 'weekly'
     '''Mission estimated to complete in 1 week.
     '''
     ONGOING = 'ongoing'
     '''Mission does not have a clear duration; deadline is flexible.
     '''
-# end class
+
+class MissionHierachyOrder(Enum):
+    PROJECT = 'project'
+    MISSION = 'mission'
+    STEP = 'step'
 
 class HasMissions(DatabaseEntity):
     '''An entity that contains missions as references whose objects can be fetched.
@@ -102,6 +106,7 @@ class HasMissions(DatabaseEntity):
             self.missions_id.append(mission.id)
             self.missions_mission.append(mission)
             return True
+        
 
 
 class Mission(HasMissions):
@@ -170,7 +175,7 @@ class Mission(HasMissions):
         cls, 
         mission: Dict, 
         steps_are_raw=True, 
-        title_word_limit: int = 25
+        title_word_limit: int = 20
     ) -> 'Mission':
         '''Parse mission data as a `Mission` instance.
 

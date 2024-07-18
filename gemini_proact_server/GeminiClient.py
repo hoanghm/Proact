@@ -15,8 +15,7 @@ from google.protobuf.struct_pb2 import Struct
 
 from SearchClient import SearchClient
 from database.FirebaseClient import FirebaseClient
-from database.entities import MissionPeriodType, Mission
-from database.entities import User
+from database.entities import MissionPeriodType, MissionHierachyOrder, Mission, User
 
 GEMINI_MODEL:dict = {
     "flash": "gemini-1.5-flash" 
@@ -67,48 +66,86 @@ class GeminiClient:
         )
         self.logger.info("Gemini client initialized")
 
+
+    def _get_user_information_as_strs(self, user_id:str):
+        '''
+        Retrieve User's `personal_info` and interests as strs, ready to be used in prompts
+        '''
+        user = self.fb_client.get_user_by_id(user_id)
+        
+        # personal information
+        personal_info = {
+            "location": user.location,
+            "occupation": user.occupation
+        }
+        personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
+
+        # interests
+        interest_info_str = '\n'.join([f'- {item}' for item in user.interests])
+
+        return {
+            "personal_info": personal_info_str,
+            "interests": interest_info_str
+        }
     
 
-    def generate_weekly_missions(
+    def _get_user_past_missions_as_strs(
+        self, 
+        user_id:str,
+        depth:int = 2 # latest number of missions to retrieve
+    ):
+        '''
+        Retrieve User's `past_missions` as a single string, ready to be used in prompts
+        '''
+        user = self.fb_client.get_user_by_id(user_id)
+
+        # TODO: remove depth and add a param for how far in the past to retrieve
+        self.fb_client.fetch_user_missions(user, depth=1) 
+        
+        # TODO: filter by 'weekly mission' type
+        past_missions = user.missions_mission
+        self.logger.info(f'found {len(past_missions)} past missions for user with id {user}')
+
+        if len(past_missions) == 0:
+            return ["There has not been any missions in the past."]
+        past_missions_as_strs = []
+        for i, mission in enumerate(past_missions):
+            mission_str = f"{i+1}. {mission.title}"   # each mission starts with a number
+            for step in mission.missions_mission:          # each step starts with "-"
+                mission_str += '\n' + f"- {step.title}"
+            past_missions_as_strs.append(mission_str)
+        
+        past_missions_str = '\n'.join(past_missions_as_strs)
+
+        return past_missions_str    
+        
+    
+
+    def generate_weekly_project(
         self,
         user_id: str,
-        num_missions: int,
+        num_missions: int = 3,
         debug:bool = False, # if true, do not populate missions to db
     ) -> str:
         '''
-        Generate a set of weekly missions
+        Generate a Weekly Project as a set of weekly missions
         '''
-        # Retrieve user information from db
-        user = self.fb_client.get_user_by_id(user_id)
-        personal_info = {
-            "location": user.location,
-            "occupation": user.occupation
-        }
-
-        # Retrieve user past information from db
-        # TODO: remove depth and add a param for how far in the past to retrieve
-        self.fb_client.fetch_user_missions(user, depth=1) 
-        past_missions = self._get_user_past_missions_as_strs(user)
-
-         # Info formatted as str
-        personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
-        interest_info_str = '\n'.join([f'- {item}' for item in user.interests])
-        past_missions_str = '\n'.join(past_missions)
 
         user = self.fb_client.get_user_by_id(user_id)
-        personal_info = {
-            "location": user.location,
-            "occupation": user.occupation
-        }
 
-        # Retrieve user past information from db 
-        self.fb_client.fetch_user_missions(user, depth=1)
-        past_missions = self._get_user_past_missions_as_strs(user)
+        # Personal Info formatted as str
+        user_info_dict = self._get_user_information_as_strs(user_id=user_id)
+        personal_info_str = user_info_dict['personal_info']
+        interest_info_str = user_info_dict['interests']
 
-        # Info formatted as str
-        personal_info_str = '\n'.join([f'- {k}: {v}' for k,v in personal_info.items()])
-        interest_info_str = '\n'.join([f'- {item}' for item in user.interests])
-        past_missions_str = '\n'.join(past_missions)
+        # TODO: Get Past weekly missions formatted as str
+        past_missions_str = "None"
+        # past_missions_str = self._get_user_past_missions_as_strs(
+        #     user_id = user_id,
+        #     mission_type = MissionPeriodType.WEEKLY,
+        #     order = MissionHierachyOrder.PROJECT
+        # )
+        
 
         # Prompt template
         prompt = f'''
@@ -187,6 +224,7 @@ class GeminiClient:
         '''
         Generate a single ongoing project consisting of multiple missions
         '''
+        raise NotImplementedError("Method still in progress, not ready to be used.") 
         user = self.fb_client.get_user_by_id(user)
         personal_info = {
             "location": user.location,
@@ -236,6 +274,7 @@ class GeminiClient:
 
         if '```json' in missions_str: # common error 
             missions_str = missions_str.replace('```json', '').replace('```', '')
+        breakpoint()
         return json.loads(missions_str, object_hook=Mission.from_dict)
 
 
@@ -309,38 +348,6 @@ class GeminiClient:
 
         return response_text
 
-    def _get_user_past_missions_as_strs(self, user: User) -> List[str]:
-        '''Format past missions of user `user` as a single string, ready to be used in prompts.
-
-        Assumes that user missions have already been fetched.
-        '''
-
-        past_missions = user.missions_mission
-        self.logger.info(f'found {len(past_missions)} past missions for user with id {user}')
-
-        if len(past_missions) == 0:
-            return ["There has not been any missions in the past."]
-        past_missions_as_strs = []
-        for i, mission in enumerate(past_missions):
-            mission_str = f"{i+1}. {mission.title}"   # each mission starts with a number
-            for step in mission.missions_mission:          # each step starts with "-"
-                mission_str += '\n' + f"- {step.title}"
-            past_missions_as_strs.append(mission_str)
-
-        return past_missions_as_strs
-
-
-    # TODO: Implement this function to use gemini ChatSession with automatic function calling
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
-    def _submit_chat(self, msg:str) -> str:
-        '''
-        Initiate a chat session and send a chat to the Gemini API. Function calling is automatic by default.
-        '''
-        chat = self.client.start_chat(enable_automatic_function_calling=True)
-        chat.send_message(msg)
-        pass
-
-    
 
 
     def _generate_ongoing_project():
@@ -427,7 +434,7 @@ if __name__ == "__main__":
     )
 
     # Try get new ongoing missions
-    client.generate_weekly_missions(
+    client.generate_weekly_project(
         user_id="ED0wLoYYm4Ur1atUGeKvGUVDYd83",
         num_missions=2,
         debug=True

@@ -38,3 +38,4 @@ class User(HasMissions):
         self.location: Optional[str] = kwargs.get('location')
         self.interests: List[str] = kwargs.get('interests', [])
         self.questionnaire: List[UserQuestion] = kwargs.get('questionnaire', [])
+

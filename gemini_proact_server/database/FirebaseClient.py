@@ -12,8 +12,7 @@ from google.cloud.firestore import Client, DocumentReference, FieldFilter
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.api_core import exceptions
 
-from .entities import Mission
-from .entities import User
+from .entities import Mission, User, MissionPeriodType, MissionHierachyOrder
 
 from attrs import define, field, NOTHING
 from typing import *
@@ -99,6 +98,18 @@ class FirebaseClient:
             mission_ids=user.missions_id,
             depth=depth
         )
+
+    
+    def add_mission_entity_to_db(
+        self,
+        type: Type[MissionPeriodType],
+        order: Type[MissionHierachyOrder],
+        title: str,
+        description: str,
+        steps: List[Dict]
+    ):
+        pass
+        
 
 
     def add_mission_to_db(
