@@ -2,23 +2,33 @@ import logging
 import json
 from enum import Enum
 from datetime import datetime
+import math
+from datetime import datetime
 
-from .DatabaseEntity import DatabaseEntity
-from utils import strings
+from utils import generate_firestore_id
 
+import attrs
+from attrs import define, field, NOTHING
 from typing import *
 from typing_extensions import override
 
 
 logger = logging.getLogger('proact.database.mission')
 
+
+class DefaultValues():
+    WEEKLY_MISSION_REGENERATION_MAX = 3
+    ONGOING_PROJECT_REGENERATION_MAX = math.inf
+
+
 class MissionStatus(Enum):
     NOT_STARTED = 'not started'
     IN_PROGRESS = 'in progress'
     DONE = 'done'
-# end class
+    EXPIRED = 'expired'
 
-class MissionPeriodType(Enum):
+
+class MissionPeriodType(Enum): # Only needed for projects
     WEEKLY = 'weekly'
     '''Mission estimated to complete in 1 week.
     '''
@@ -26,198 +36,136 @@ class MissionPeriodType(Enum):
     '''Mission does not have a clear duration; deadline is flexible.
     '''
 
-class MissionHierachyOrder(Enum):
+class MissionLevel(Enum):
     PROJECT = 'project'
     MISSION = 'mission'
     STEP = 'step'
 
-class HasMissions(DatabaseEntity):
-    '''An entity that contains missions as references whose objects can be fetched.
+
+@define
+class BaseMission():
     '''
-
-    @override
-    @classmethod
-    def _attr_keys(cls, missions_alias: str = None) -> strings.List[str]:
-        return super()._attr_keys() + [
-            missions_alias if missions_alias is not None else 'missions'
-        ]
-    # end def
-
-    def __init__(self, missions_alias: str = None, **kwargs):
-        super().__init__(**kwargs)
-
-        if missions_alias is not None:
-            kwargs['missions'] = kwargs.get(missions_alias)
-        
-        missions: List[Union[str, Mission]] = kwargs.get('missions', [])
-        self.missions_id: List[str] = []
-        '''List of child mission ids.
-        '''
-        self.missions_mission: List[Mission] = []
-        '''List of child missions.
-        
-        In context of querying a parent mission, this list will not be populated until `steps_id` is
-        used to query child mission details.
-        '''
-
-        if len(missions) > 0:
-            if type(missions[0]) == str:
-                self.missions_id = [
-                    m_id for m_id in missions
-                ]
-                # steps_mission can be optionally determined by query when needed
-            # end step ids
-
-            else:
-                for m_mission in missions:
-                    self.missions_mission.append(m_mission)
-                    self.missions_id.append(m_mission.id)
-            # end steps
-        # end if
-    # end def
-
-    @override
-    def to_dict(self, missions_alias: str = None, depth: int=0) -> Dict:
-        d = super().to_dict()
-
-        # non scalar synonymous attributes
-        missions_key = missions_alias if missions_alias is not None else 'missions'
-        d.update({
-            missions_key: self.missions_id,
-        })
-
-        if depth > 0:
-            d[missions_key] = [
-                mission.to_dict(depth=depth-1)
-                for mission in self.missions_mission
-            ]
-        return d
-
-    def add_mission(self, mission: 'Mission') -> bool:
-        '''Add a mission to this parent.
-        
-        :return: `True` if the mission was added to this parent, `False` if the mission was already
-        in this parent.
-        '''
-        if mission.id in self.missions_id:
-            logger.info(f'{mission} already in {self}')
-            return False
-        else:
-            self.missions_id.append(mission.id)
-            self.missions_mission.append(mission)
-            return True
-        
-
-
-class Mission(HasMissions):
-    '''Represents a single mission/task.
-
-    Supports json serialize and parse.
+    Represents an object in the `Mission` collection that can either be a Project, Mission, or Step
     '''
-
-    PERIOD_TYPE_DEFAULT = MissionPeriodType.ONGOING
-    MISSIONS_ALIAS = 'steps'
-
-    @classmethod
-    def _attr_keys(cls) -> List[str]:
-        return [
-            'title',
-            'type',
-            'description',
-            'status',
-            'deadline',
-            'styleId',
-            'eventId'
-        ] + super()._attr_keys(missions_alias=cls.MISSIONS_ALIAS)
-    # end def
+    title: str = field(default=NOTHING)
+    id: str = field(factory=generate_firestore_id, repr=False) # same format as firestore auto-generated ids
+    description: str = field(default="", repr=False)
+    level: Union[Type[MissionLevel], None] = field(default=None) # will be defined by child classes 
+    type: Union[Type[MissionPeriodType], None] = field(default=None) # only applicable to projects
+    steps: List['BaseMission'] = field(factory=list, repr=False)
+    status: Type[MissionStatus] = field(default=MissionStatus.NOT_STARTED, repr=False)
+    deadline: Union[str, None] = field(default=None, repr=False)
+    styleId: Union[str, None] = field(default=None, repr=False)
+    ecoPoints: int = field(default=0, repr=False)
+    CO2InKg: int = field(default=0, repr=False) 
+    eventId: Union[str, None] = field(default=None, repr=False)
+    regenerationLeft: int = field(default=0, repr=False)
+    createdTimestamp: Union[str, None] = field(factory=datetime.now, repr=False)
 
     @classmethod
-    def _summary_keys(cls) -> int:
-        return 2
-    # end def
-
-    def __init__(self, **kwargs):
-        super().__init__(missions_alias=self.MISSIONS_ALIAS, **kwargs)
-
-        _type = kwargs.get('type', self.PERIOD_TYPE_DEFAULT)
-        self.type: MissionPeriodType = (
-            _type 
-            if type(_type) == MissionPeriodType else
-            MissionPeriodType._value2member_map_[_type]
+    def from_dict(cls, data: dict) -> 'BaseMission':
+        return cls(
+            **data
         )
         
-        status = kwargs.get('status', MissionStatus.NOT_STARTED)
-        self.status: MissionStatus = (
-            status
-            if type(status) == MissionStatus else
-            MissionStatus._value2member_map_[status]
-        )
-
-        self.title: str = kwargs['title']
-        self.description: Optional[str] = kwargs.get('description')
-
-        deadline: Optional[str] = kwargs.get('deadline')
-        self.deadline: Optional[datetime] = None
-        if deadline is not None:
-            self.deadline = datetime.fromisoformat(deadline)
-        # end if
-
-        self.styleId: Optional[str] = kwargs.get('styleId')
-        '''Reference to a `ComponentStyle`.
+    
+    def add_step(self, step:'BaseMission'):
         '''
-        self.eventId: Optional[str] = kwargs.get('eventId')
-        '''Reference to an `Event`.
+        Add a `BaseMission` child to the current `BaseMission` object
         '''
-    # end def
+        if not isinstance(step, BaseMission):
+            msg = "Step must be an instance of `BaseMission`"
+            logger.error(msg)
+            raise ValueError("Step must be an instance of `BaseMission`")
+        # append new step
+        self.steps.append(step)
+        # update stats
+        self.ecoPoints += step.ecoPoints
+        self.CO2InKg += step.CO2InKg
 
-    @classmethod
-    def from_dict(
-        cls, 
-        mission: Dict, 
-        steps_are_raw=True, 
-        title_word_limit: int = 20
-    ) -> 'Mission':
-        '''Parse mission data as a `Mission` instance.
 
-        TODO derive step titles from raw descriptions using `GeminiClient`.
+    def add_steps(self, steps:List['BaseMission']):
+        for step in steps:
+            self.add_step(step)
 
-        :param steps_are_raw: Whether the child missions are provided as raw descriptions.
-        '''
-
-        logger.debug(f'create {cls.__name__} from {mission}')
-
-        if steps_are_raw and cls.MISSIONS_ALIAS in mission:
-            # convert step descriptions to Mission instances
-            steps = []
-            for step in mission[cls.MISSIONS_ALIAS]:
-                steps.append(Mission(
-                    type=mission.get('type', cls.PERIOD_TYPE_DEFAULT),
-                    title=' '.join(strings.to_words(step)[:title_word_limit]),
-                    description=step,
-                    steps=[],
-                    deadline=mission.get('deadline')
-                ))
-            # end for step
-
-            mission['steps'] = steps
-        # end if steps raw
-
-        return super().from_dict(mission)
-    # end def
-
-    @override
-    def to_dict(self, depth: int=0) -> Dict:
-        d = super().to_dict(missions_alias=self.MISSIONS_ALIAS)
-
-        # non scalar synonymous attributes
+    
+    def to_dict(self):
+        d = attrs.asdict(self)
         d.update({
-            'type': self.type.value,
+            'steps': [s.id for s in self.steps],
             'status': self.status.value,
-            'deadline': self.deadline,
-            'styleId': self.styleId,
-            'eventId': self.eventId
+            'type': self.type.value if self.type is not None else None,
+            'level': self.level.value
         })
-
         return d
-    # end def
-# end class
+
+
+
+@define
+class WeeklyProject(BaseMission):
+    '''
+    A Weekly Project that consists of missions. For now not much different than BaseMission.
+    '''
+    type: Type[MissionPeriodType] = MissionPeriodType.WEEKLY
+    level: Type[MissionLevel] = MissionLevel.PROJECT
+    regenerationLeft: int = field(default=0) # weekly project can't be regenerated
+
+
+@define 
+class OngoingProject(BaseException):
+    '''
+    An Ongoing Project that consists of ongoing missions. For now not much different than BaseMission.
+    '''
+    type: Type[MissionPeriodType] = MissionPeriodType.ONGOING
+    level: Type[MissionLevel] = MissionLevel.PROJECT
+    regenerationleft:int = field(default=DefaultValues.ONGOING_PROJECT_REGENERATION_MAX)
+
+
+@define
+class WeeklyMission(BaseMission):
+    '''
+    A Mission that consists of steps. For now no different than BaseMission.
+    '''
+    level: Type[MissionLevel] = MissionLevel.MISSION
+    regenerationleft:int = field(default=DefaultValues.WEEKLY_MISSION_REGENERATION_MAX)
+
+
+@define
+class OngoingMission(BaseMission):
+    '''
+    A Mission that consists of steps. For now no different than BaseMission.
+    '''
+    level: Type[MissionLevel] = MissionLevel.MISSION
+    regenerationleft:int = field(default=0) # Ongoing missions can't be regenerated
+
+
+@define
+class Step(BaseMission):
+    '''
+    A Step that consists of substeps. For now no different than BaseMission.
+    '''
+    level: Type[MissionLevel] = MissionLevel.STEP
+    regenerationleft:int = field(default=0) # steps can't be regenerated
+
+
+
+# test driver
+if __name__ == "__main__":
+    project = WeeklyProject(
+        title="Week 3"
+    )
+
+    m1 = WeeklyMission(
+        title="Mission 1",
+        description="Mission 1 description",
+        ecoPoints=10,
+        CO2InKg=20
+    )
+    m2 = WeeklyMission(
+        title="Mission 2",
+        description="Mission 2 description",
+        ecoPoints=5,
+        CO2InKg=15
+    )
+
+    project.add_steps([m1, m2])

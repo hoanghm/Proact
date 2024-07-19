@@ -5,6 +5,7 @@ This class handles all interactions with Firebase including Cloud Firestore, Clo
 import os
 import logging
 import uuid
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 
@@ -12,7 +13,8 @@ from google.cloud.firestore import Client, DocumentReference, FieldFilter
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.api_core import exceptions
 
-from .entities import Mission, User, MissionPeriodType, MissionHierachyOrder
+from .entities.User import *
+from .entities.Mission import *
 
 from attrs import define, field, NOTHING
 from typing import *
@@ -66,15 +68,15 @@ class FirebaseClient:
         return user
 
 
-    def get_missions(self, mission_ids: List[str], depth: int=0) -> List[Mission]:
+    def get_missions(self, mission_ids: List[str], depth: int=0):
         missions = []
-        mission_ref = self.db.collection(Mission.table_name())
+        mission_ref = self.db.collection('Mission')
 
         for mission_id in mission_ids:
             try:
                 mission_raw = mission_ref.document(document_id=mission_id).get()
                 if mission_raw.exists:
-                    mission = Mission.from_dict(mission_raw.to_dict(), steps_are_raw=False)
+                    mission = BaseMission.from_dict(mission_raw.to_dict(), steps_are_raw=False)
                     if depth > 0 and len(mission.missions_id) > 0:
                         self.logger.debug(f'fetch steps until depth={depth} for {mission}')
                         mission.missions_mission = self.get_missions(mission.missions_id, depth=depth-1)
@@ -102,19 +104,50 @@ class FirebaseClient:
     
     def add_mission_entity_to_db(
         self,
-        type: Type[MissionPeriodType],
-        order: Type[MissionHierachyOrder],
-        title: str,
-        description: str,
-        steps: List[Dict]
+        mission_entity: BaseMission,
+        debug: bool=False # If true, do not add to db
     ):
-        pass
+        if not isinstance(mission_entity, BaseMission):
+            msg = "Encountered mission that is not of type `BaseMission`"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
         
+        # add all steps of this mission entity to db first
+        for step in mission_entity.steps:
+            self.add_mission_entity_to_db(
+                mission_entity = step,
+                debug = debug
+            )
+
+        # base case, no more steps to process
+        if not debug:
+            mission_ref = self.db.collection("Mission")
+            mission_ref.add(mission_entity.to_dict())
+        self.logger.info(f"Added mission entity: {mission_entity}") 
+    
+
+    def add_project_to_user(
+            self, 
+            project:Union[WeeklyProject, OngoingProject],
+            user_id:str,
+            debug:bool = False # If true, do not add to db
+        ):
+        user_ref = self.db.collection("User")
+        user_doc = user_ref.document(user_id)
+
+        if not debug:
+            res = user_doc.update({
+                "projects": firestore.ArrayUnion([project.id])
+            })
+            self.logger.info(f'New project added to user {user_doc.id} in db at {res.update_time}')
+        else:
+            self.logger.info(f'New project for user {user_doc.id} was not written to db in debug mode')
+
 
 
     def add_mission_to_db(
         self, 
-        mission: Mission, 
+        mission: BaseMission, 
         user: User,
         skip_assignment: bool=False,
         debug: bool=False
@@ -146,7 +179,7 @@ class FirebaseClient:
 
         # persist mission
         if not debug:
-            mission_ref = self.db.collection(Mission.table_name())
+            mission_ref = self.db.collection("Mission")
 
             ts_dr: Tuple[Timestamp, DocumentReference] = mission_ref.add(mission.to_dict())
             doc_ref = ts_dr[1]

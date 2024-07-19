@@ -2,7 +2,7 @@ from typing import *
 import logging
 from .DatabaseEntity import DatabaseEntity
 from .Question import UserQuestion
-from .Mission import HasMissions
+from .OldMission import HasMissions
 
 logger = logging.getLogger('proact.database.user')
 

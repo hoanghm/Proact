@@ -15,7 +15,8 @@ from google.protobuf.struct_pb2 import Struct
 
 from SearchClient import SearchClient
 from database.FirebaseClient import FirebaseClient
-from database.entities import MissionPeriodType, MissionHierachyOrder, Mission, User
+from database.entities.Mission import *
+from database.entities.User import User
 
 GEMINI_MODEL:dict = {
     "flash": "gemini-1.5-flash" 
@@ -118,7 +119,50 @@ class GeminiClient:
         past_missions_str = '\n'.join(past_missions_as_strs)
 
         return past_missions_str    
+    
+
+    def _parse_weekly_project(
+            self, 
+            missions_str: List[str], # list of projects
+            project_title: str,
+            project_desc: str = ""
+        ) -> WeeklyProject:
+        '''Parse missions from gemini response.
+
+        :raises: `JsonDecodeError` on parse failure.
+        '''
+
+        if '```json' in missions_str: # common error 
+            missions_str = missions_str.replace('```json', '').replace('```', '')
+        raw_missions = json.loads(missions_str)
+
+        # first create empty project without missions
+        project = WeeklyProject(
+            title = project_title,
+            description = project_desc
+        )
+
+        # Create each mission
+        missions = []
+        for raw_mission in raw_missions:
+            mission = WeeklyMission(
+                title = raw_mission['title'],
+                description = raw_mission['description']
+            )
+            # Create mission steps
+            steps = []
+            for step_str in raw_mission['steps']:
+                step = Step(title=step_str)
+                steps.append(step)
+            # Add steps to mission
+            mission.add_steps(steps)
+            # Add mission to list
+            missions.append(mission)
         
+        # Add missions to projects
+        project.add_steps(missions)
+
+        return project
     
 
     def generate_weekly_project(
@@ -186,10 +230,10 @@ class GeminiClient:
 
         # Submit prompt until successfully parsed or MAX_ATTEMPT reached
         MAX_ATTEMPT = 5
-        valid_missions_generated = False
+        valid_project_generated = False
         attempt = 0
-        missions: List[Mission]
-        while not valid_missions_generated and attempt < MAX_ATTEMPT:
+        missions: List[BaseMission]
+        while not valid_project_generated and attempt < MAX_ATTEMPT:
             attempt += 1
             self.logger.info(f'generate weekly missions attempt {attempt}/{MAX_ATTEMPT}')
 
@@ -198,22 +242,28 @@ class GeminiClient:
             
             # missions parsing check
             try:
-                missions = self._parse_missions(missions_str)
-                valid_missions_generated = True
+                project = self._parse_weekly_project(
+                    missions_str=missions_str,
+                    project_title="Weekly project"
+                )
+                valid_project_generated = True
             
             except json.decoder.JSONDecodeError:
                 self.logger.warning(f"Error parsing missions from gemini answer")
         
-        # add new missions to db TODO: include type = 'mission'
-        for mission in missions:
-            self.fb_client.add_mission_to_db(
-                mission=mission,
-                user=user,
-                debug = debug
-            )
+        # Add project and all its child missions, steps to db
+        self.fb_client.add_mission_entity_to_db(
+            mission_entity = project,
+            debug = debug
+        )
+        self.fb_client.add_project_to_user(
+            project=project,
+            user_id=user_id, 
+            debug=debug
+        )
 
-        self.logger.info(f"Successfully generated {len(missions)} missions for user username={user.username}.")
-        return missions
+        self.logger.info(f"Successfully generated Weekly Project '{project.title}' with {len(project.steps)} child missions")
+        return project
         
 
     def generate_ongoing_project(
@@ -266,16 +316,7 @@ class GeminiClient:
         return missions
 
 
-    def _parse_missions(self, missions_str: str) -> List[Mission]:
-        '''Parse missions from gemini response.
 
-        :raises: `JsonDecodeError` on parse failure.
-        '''
-
-        if '```json' in missions_str: # common error 
-            missions_str = missions_str.replace('```json', '').replace('```', '')
-        breakpoint()
-        return json.loads(missions_str, object_hook=Mission.from_dict)
 
 
     # @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
@@ -434,8 +475,9 @@ if __name__ == "__main__":
     )
 
     # Try get new ongoing missions
-    client.generate_weekly_project(
+    project = client.generate_weekly_project(
         user_id="ED0wLoYYm4Ur1atUGeKvGUVDYd83",
         num_missions=2,
-        debug=True
+        debug=False
     )
+    breakpoint()
