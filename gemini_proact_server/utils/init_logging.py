@@ -26,7 +26,7 @@ def set_global_logging_level(level:Literal[10,20,30,40,50]):
     '''
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
     for logger in loggers:
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(level)
 
 
 class ColoredFormatter(logging.Formatter):

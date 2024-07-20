@@ -1,10 +1,14 @@
 import logging
 import json
-from typing import *
 from enum import Enum
 from datetime import datetime
+
+from .DatabaseEntity import DatabaseEntity
 from utils import strings
-from database.Entity import Entity
+
+from typing import *
+from typing_extensions import override
+
 
 logger = logging.getLogger('proact.database.mission')
 
@@ -15,15 +19,19 @@ class MissionStatus(Enum):
 # end class
 
 class MissionPeriodType(Enum):
-    WEEK = 'weekly'
+    WEEKLY = 'weekly'
     '''Mission estimated to complete in 1 week.
     '''
     ONGOING = 'ongoing'
     '''Mission does not have a clear duration; deadline is flexible.
     '''
-# end class
 
-class HasMissions(Entity):
+class MissionHierachyOrder(Enum):
+    PROJECT = 'project'
+    MISSION = 'mission'
+    STEP = 'step'
+
+class HasMissions(DatabaseEntity):
     '''An entity that contains missions as references whose objects can be fetched.
     '''
 
@@ -83,10 +91,7 @@ class HasMissions(Entity):
                 mission.to_dict(depth=depth-1)
                 for mission in self.missions_mission
             ]
-        # end if depth
-
         return d
-    # end def
 
     def add_mission(self, mission: 'Mission') -> bool:
         '''Add a mission to this parent.
@@ -101,8 +106,8 @@ class HasMissions(Entity):
             self.missions_id.append(mission.id)
             self.missions_mission.append(mission)
             return True
-    # end def
-# end class
+        
+
 
 class Mission(HasMissions):
     '''Represents a single mission/task.
@@ -170,7 +175,7 @@ class Mission(HasMissions):
         cls, 
         mission: Dict, 
         steps_are_raw=True, 
-        title_word_limit: int = 25
+        title_word_limit: int = 20
     ) -> 'Mission':
         '''Parse mission data as a `Mission` instance.
 
@@ -214,32 +219,5 @@ class Mission(HasMissions):
         })
 
         return d
-    # end def
-# end class
-
-class UserMission(Entity):
-    '''Represents assignments of users to missions. DEPRECATED.
-
-    Deprecated in favor of a simpler `User.missions` attribute, since we are not aiming to support multi user missions.
-
-    Supports json serialize and parse.
-    '''
-
-    @classmethod
-    def _attr_keys(cls) -> List[str]:
-        return super()._attr_keys() + [
-            'userId',
-            'missionId'
-        ]
-    # end def
-
-    @classmethod
-    def _summary_keys(cls) -> int:
-        return 3
-    # end def
-
-    def __init__(self, **kwargs):
-        self.userId: str = kwargs['userId']
-        self.missionId: str = kwargs['missionId']
     # end def
 # end class

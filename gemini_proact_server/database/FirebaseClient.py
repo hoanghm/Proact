@@ -3,17 +3,22 @@ This class handles all interactions with Firebase including Cloud Firestore, Clo
 '''
 
 import os
+import logging
+import uuid
+
 import firebase_admin
 from firebase_admin import credentials, firestore
+
 from google.cloud.firestore import Client, DocumentReference, FieldFilter
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.api_core import exceptions
-import logging
+
+from .entities.User import *
+from .entities.Mission import *
+
 from attrs import define, field, NOTHING
 from typing import *
-from database.Mission import Mission
-from database.User import User
-import uuid
+
 
 @define
 class FirebaseClient:
@@ -61,17 +66,17 @@ class FirebaseClient:
         user = User.from_dict(user_data)
         self.logger.info(f"Successfully retrieved {user}")
         return user
-    # end def
 
-    def get_missions(self, mission_ids: List[str], depth: int=0) -> List[Mission]:
+
+    def get_missions(self, mission_ids: List[str], depth: int=0):
         missions = []
-        mission_ref = self.db.collection(Mission.table_name())
+        mission_ref = self.db.collection('Mission')
 
         for mission_id in mission_ids:
             try:
                 mission_raw = mission_ref.document(document_id=mission_id).get()
                 if mission_raw.exists:
-                    mission = Mission.from_dict(mission_raw.to_dict(), steps_are_raw=False)
+                    mission = BaseMission.from_dict(mission_raw.to_dict(), steps_are_raw=False)
                     if depth > 0 and len(mission.missions_id) > 0:
                         self.logger.debug(f'fetch steps until depth={depth} for {mission}')
                         mission.missions_mission = self.get_missions(mission.missions_id, depth=depth-1)
@@ -81,10 +86,8 @@ class FirebaseClient:
                     self.logger.error(f'failed to fetch mission {mission_id}')
             except exceptions.InvalidArgument as e:
                 self.logger.error(f'failed to fetch mission {mission_id}. {e}')
-        # end for mission step
-
         return missions
-    # end def
+
 
     def fetch_user_missions(self, user: User, depth: int=0):
         '''Populate `user.missions_mission` by fetching from references.
@@ -97,11 +100,54 @@ class FirebaseClient:
             mission_ids=user.missions_id,
             depth=depth
         )
-    # end def
+
+    
+    def add_mission_entity_to_db(
+        self,
+        mission_entity: BaseMission,
+        debug: bool=False # If true, do not add to db
+    ):
+        if not isinstance(mission_entity, BaseMission):
+            msg = "Encountered mission that is not of type `BaseMission`"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+        
+        # add all steps of this mission entity to db first
+        for step in mission_entity.steps:
+            self.add_mission_entity_to_db(
+                mission_entity = step,
+                debug = debug
+            )
+
+        # base case, no more steps to process
+        if not debug:
+            mission_ref = self.db.collection("Mission")
+            mission_ref.add(mission_entity.to_dict())
+        self.logger.info(f"Added mission entity: {mission_entity}") 
+    
+
+    def add_project_to_user(
+            self, 
+            project:Union[WeeklyProject, OngoingProject],
+            user_id:str,
+            debug:bool = False # If true, do not add to db
+        ):
+        user_ref = self.db.collection("User")
+        user_doc = user_ref.document(user_id)
+
+        if not debug:
+            res = user_doc.update({
+                "projects": firestore.ArrayUnion([project.id])
+            })
+            self.logger.info(f'New project added to user {user_doc.id} in db at {res.update_time}')
+        else:
+            self.logger.info(f'New project for user {user_doc.id} was not written to db in debug mode')
+
+    
 
     def add_mission_to_db(
         self, 
-        mission: Mission, 
+        mission: BaseMission, 
         user: User,
         skip_assignment: bool=False,
         debug: bool=False
@@ -128,13 +174,12 @@ class FirebaseClient:
 
                 # add generated step id to parent mission
                 mission.missions_id[step_idx] = step_id
-            # end for
         else:
             self.logger.info(f'mission {mission} has no steps')
 
         # persist mission
         if not debug:
-            mission_ref = self.db.collection(Mission.table_name())
+            mission_ref = self.db.collection("Mission")
 
             ts_dr: Tuple[Timestamp, DocumentReference] = mission_ref.add(mission.to_dict())
             doc_ref = ts_dr[1]
@@ -174,13 +219,12 @@ if __name__ == "__main__":
     init_logging()
 
     # Set the level of all loggers
-    set_global_logging_level(logging.DEBUG)
+    set_global_logging_level(logging.INFO)
 
     fb_client = FirebaseClient()
-    user = fb_client.get_user_by_id(os.getenv('USER_ID'))
+    user = fb_client.get_user_by_id('NdarW4HYFSbzhaU9xnLG')
     fb_client.fetch_user_missions(user, depth=2)
     missions_str = '\n'.join([str(m) for m in user.missions_mission])
     fb_client.logger.info(
         f'user missions: \n{missions_str}'
     )
-# end if __main__
