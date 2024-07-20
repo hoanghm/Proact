@@ -144,3 +144,23 @@ Future<void> getUserMissions({ProactUser? user, int depth = 0}) async {
 
   user.missions = await getMissions(user.missionsId, depth: depth);
 }
+
+// Add this method to update user interests
+final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> updateUserInterests(List<String> newInterests) async {
+    try {
+      User? currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        String userId = currentUser.uid;
+        await db.collection('User').doc(userId).update({
+          'interests': newInterests,
+        });
+        print('User interests updated successfully.');
+      } else {
+        print('No user is currently signed in.');
+      }
+    } catch (e) {
+      print('Error updating user interests: $e');
+    }
+  }
