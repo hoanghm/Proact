@@ -143,7 +143,7 @@ class FirebaseClient:
         else:
             self.logger.info(f'New project for user {user_doc.id} was not written to db in debug mode')
 
-
+    
 
     def add_mission_to_db(
         self, 

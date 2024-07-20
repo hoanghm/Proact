@@ -476,7 +476,7 @@ if __name__ == "__main__":
 
     # Try get new ongoing missions
     project = client.generate_weekly_project(
-        user_id="ED0wLoYYm4Ur1atUGeKvGUVDYd83",
+        user_id="IFXLaAIczXW3hvYansv1DXrH7iH2",
         num_missions=2,
         debug=False
     )
