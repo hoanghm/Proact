@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: <Widget>[
-          const MissionHomePage(),
+          MissionHomePage(user: widget.user!),
           Profile(user: widget.user!,)
         ][_currentPageIndex]
       ) 

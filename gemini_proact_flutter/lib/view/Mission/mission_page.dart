@@ -11,10 +11,13 @@ class MissionPage extends StatefulWidget {
 class MissionPageState extends State<MissionPage> {
   @override 
   Widget build (BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Text("Hello")
-      ) 
+    return Scaffold(
+      appBar: AppBar(),
+      body: SafeArea(
+        child: Center(
+          child: Text("Hello")
+        ) 
+      )
     );
   }
 }
