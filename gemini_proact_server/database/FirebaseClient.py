@@ -91,24 +91,24 @@ class FirebaseClient:
                 mission_dict['id'] = mission_id
                 mission_entity = create_mission_entity_from_dict(mission_dict)
             else:
-                self.logger.error(f"Cannot find mission entity with id '{mission_id}'")
+                msg = f"Cannot find mission entity with id '{mission_id}'"
+                self.logger.error(msg)
+                raise ValueError(msg)
         except exceptions.InvalidArgument as e:
             self.logger.error(f'failed to fetch mission {mission_id}. {e}')
        
         return mission_entity
 
 
-    def fetch_user_missions(self, user: User, depth: int=0):
-        '''Populate `user.missions_mission` by fetching from references.
-
-        :depth: How far to follow `mission.steps` references. `0` means mission steps are not fetched.
-        `1` means child steps are fetched, but grandchild steps are not fetched.
+    def fetch_user_projects(self, user: User) -> List[Union[WeeklyProject, OngoingProject]]:
+        '''Populate `User.projects` by fetching from database.
         '''
-        
-        user.missions_mission = self.get_missions(
-            mission_ids=user.missions_id,
-            depth=depth
-        )
+        # Fetch each project from the user's list of project ids
+        for project_id in user.project_ids:
+            project = self.get_mission_entity_by_id(project_id)
+            user.projects.append(project)
+        self.logger.info(f"Fetched {len(user.projects)} projects for user {user.id}")
+        return user.projects
 
     
     def add_mission_entity_to_db(
@@ -169,4 +169,6 @@ if __name__ == "__main__":
     set_global_logging_level(logging.INFO)
 
     fb_client = FirebaseClient()
-    mission = fb_client.get_mission_entity_by_id("SteysU3dxfzk6uSdpOlx")
+    user = fb_client.get_user_by_id("IFXLaAIczXW3hvYansv1DXrH7iH2")
+    projects = fb_client.fetch_user_projects(user)
+    breakpoint()

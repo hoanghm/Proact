@@ -19,14 +19,18 @@ class User(DatabaseEntity):
     occupation: str = field(default=None)
     location: str = field(default=None)
     interests: List[str] = field(factory=list)
+    projects: List[str] = field(factory=list)
+    project_ids: List[str] = field(factory=list)
 
     @classmethod
     def from_dict(cls, input_dict:Dict): 
         return cls(
+            id = input_dict.get('id'),
             username = input_dict.get('username'),
             email = input_dict.get('email'),
             occupation = input_dict.get('occupation'),
             location = input_dict.get('location'),
-            interests = input_dict.get('interests')
+            interests = input_dict.get('interests'),
+            project_ids = input_dict.get('projects')
         )
 
