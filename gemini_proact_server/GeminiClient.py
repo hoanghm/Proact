@@ -16,7 +16,6 @@ from google.protobuf.struct_pb2 import Struct
 from SearchClient import SearchClient
 from database.FirebaseClient import FirebaseClient
 from database.entities.Mission import *
-from database.entities.User import User
 
 GEMINI_MODEL:dict = {
     "flash": "gemini-1.5-flash" 
@@ -275,47 +274,6 @@ class GeminiClient:
         Generate a single ongoing project consisting of multiple missions
         '''
         raise NotImplementedError("Method still in progress, not ready to be used.") 
-        user = self.fb_client.get_user_by_id(user)
-        personal_info = {
-            "location": user.location,
-            "occupation": user.occupation
-        }
-
-        self.fb_client.fetch_user_missions(user, depth=1)
-        past_missions = self._get_user_past_missions_as_strs(user)
-
-        # generate new missions
-        MAX_ATTEMPT = 3
-        valid_missions_generated = False
-        attempt = 0
-        missions: List[Mission]
-        while not valid_missions_generated and attempt < MAX_ATTEMPT:
-            attempt += 1
-            self.logger.info(f'generate missions attempt {attempt}')
-
-                
-            # project parsing check
-            try:
-                missions = self._parse_missions(new_missions_str)
-                valid_missions_generated = True
-            
-            except json.decoder.JSONDecodeError:
-                self.logger.warning(f"Error parsing missions from gemini answer")
-        # end while not generated
-        
-        # add new missions to db
-        for mission in missions:
-            self.fb_client.add_mission_to_db(
-                mission=mission,
-                user=user,
-                debug = debug
-            )
-        # end for
-
-        self.logger.info(f"Successfully generated {len(missions)} missions for user username={user.username}.")
-        return missions
-
-
 
 
 

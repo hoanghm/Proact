@@ -53,7 +53,7 @@ class FirebaseClient:
         Get user information as `User` instance given a `user_id`.
         '''
 
-        user_snap = self.db.collection(User.table_name()).document(user_id).get()
+        user_snap = self.db.collection('User').document(user_id).get()
 
         if not user_snap.exists:
             raise ValueError(f"No user found with id={user_id}")
@@ -68,25 +68,34 @@ class FirebaseClient:
         return user
 
 
-    def get_missions(self, mission_ids: List[str], depth: int=0):
-        missions = []
+    def get_mission_entity_by_id(
+            self, 
+            mission_id: str, 
+        ) -> BaseMission:
         mission_ref = self.db.collection('Mission')
+        mission_entity: BaseMission = None # to return
+        try:
+            mission_raw = mission_ref.document(document_id=mission_id).get()
+            if mission_raw.exists:
+                # Parse mission entity
+                mission_dict = mission_raw.to_dict()
 
-        for mission_id in mission_ids:
-            try:
-                mission_raw = mission_ref.document(document_id=mission_id).get()
-                if mission_raw.exists:
-                    mission = BaseMission.from_dict(mission_raw.to_dict(), steps_are_raw=False)
-                    if depth > 0 and len(mission.missions_id) > 0:
-                        self.logger.debug(f'fetch steps until depth={depth} for {mission}')
-                        mission.missions_mission = self.get_missions(mission.missions_id, depth=depth-1)
-                    
-                    missions.append(mission)
-                else:
-                    self.logger.error(f'failed to fetch mission {mission_id}')
-            except exceptions.InvalidArgument as e:
-                self.logger.error(f'failed to fetch mission {mission_id}. {e}')
-        return missions
+                # Create each 'step' obj first
+                steps:List[BaseMission] = [] 
+                for step_id in mission_dict['steps']:
+                    step = self.get_mission_entity_by_id(step_id)
+                    steps.append(step)
+                
+                # Then create Mission entity
+                mission_dict['steps'] = steps
+                mission_dict['id'] = mission_id
+                mission_entity = create_mission_entity_from_dict(mission_dict)
+            else:
+                self.logger.error(f"Cannot find mission entity with id '{mission_id}'")
+        except exceptions.InvalidArgument as e:
+            self.logger.error(f'failed to fetch mission {mission_id}. {e}')
+       
+        return mission_entity
 
 
     def fetch_user_missions(self, user: User, depth: int=0):
@@ -121,8 +130,12 @@ class FirebaseClient:
 
         # base case, no more steps to process
         if not debug:
-            mission_ref = self.db.collection("Mission")
-            mission_ref.add(mission_entity.to_dict())
+            mission_collection_ref = self.db.collection("Mission")
+            project_doc_ref = mission_collection_ref.document(mission_entity.id)
+            try:
+                project_doc_ref.set(mission_entity.to_dict())
+            except TypeError as e:
+                self.logger.error(f"Error when adding mission entity to db. {e}")
         self.logger.info(f"Added mission entity: {mission_entity}") 
     
 
@@ -143,72 +156,6 @@ class FirebaseClient:
         else:
             self.logger.info(f'New project for user {user_doc.id} was not written to db in debug mode')
 
-    
-
-    def add_mission_to_db(
-        self, 
-        mission: BaseMission, 
-        user: User,
-        skip_assignment: bool=False,
-        debug: bool=False
-    ) -> str:
-        '''Add a new mission, to Cloud Firestore as well as assignment to the given user.
-
-        :param skip_assignment: Whether to skip creation of the user-mission entry (used to skip assignment for child missions
-        if user is already assigned to parent mission).
-        :param debug: If true, do not add mission to db.
-        :return: Generated mission id.
-        '''
-
-        # persist steps
-        if len(mission.missions_mission) > 0:
-            self.logger.debug(f'mission {mission} as {len(mission.missions_mission)} steps')
-            # recursive call to first persist steps as child missions
-            for step_idx, step in enumerate(mission.missions_mission):
-                step_id = self.add_mission_to_db(
-                    mission=step,
-                    user=user,
-                    skip_assignment=True,
-                    debug=debug
-                )
-
-                # add generated step id to parent mission
-                mission.missions_id[step_idx] = step_id
-        else:
-            self.logger.info(f'mission {mission} has no steps')
-
-        # persist mission
-        if not debug:
-            mission_ref = self.db.collection("Mission")
-
-            ts_dr: Tuple[Timestamp, DocumentReference] = mission_ref.add(mission.to_dict())
-            doc_ref = ts_dr[1]
-            mission.id = doc_ref.id
-            self.logger.info(f"new mission {mission} added to db")
-        else:   # if debug = True, do not add new mission to db
-            mission.id = str(uuid.uuid1())
-            self.logger.info(f"test mission {mission} was not added to db in debug mode")
-        
-        if not skip_assignment:
-            user.add_mission(mission=mission)
-
-            # update user in db
-            if not debug:
-                user_doc = self.db.collection(User.table_name()).document(user.id)
-                res = user_doc.set(
-                    document_data={
-                        'missions': user.missions_id
-                    },
-                    merge=True
-                )
-                self.logger.info(f'new mission added to user {user_doc.id} in db at {res.update_time}')
-            else:
-                self.logger.info(f'new mission in user {user} was not written to db in debug mode')
-        else:
-            self.logger.debug(f'skip user assignment for {mission}')
-
-        return mission.id
-# end class
 
 # test driver
 if __name__ == "__main__":
@@ -222,9 +169,4 @@ if __name__ == "__main__":
     set_global_logging_level(logging.INFO)
 
     fb_client = FirebaseClient()
-    user = fb_client.get_user_by_id('NdarW4HYFSbzhaU9xnLG')
-    fb_client.fetch_user_missions(user, depth=2)
-    missions_str = '\n'.join([str(m) for m in user.missions_mission])
-    fb_client.logger.info(
-        f'user missions: \n{missions_str}'
-    )
+    mission = fb_client.get_mission_entity_by_id("SteysU3dxfzk6uSdpOlx")
