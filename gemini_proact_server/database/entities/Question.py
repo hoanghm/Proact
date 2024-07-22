@@ -1,8 +1,11 @@
-from typing import *
 import logging
-from typing import Dict, List
 from enum import Enum
-from database.Entity import Entity
+
+from .DatabaseEntity import DatabaseEntity
+
+from typing import Dict, List, Optional
+from typing_extensions import override
+
 
 logger = logging.getLogger('proact.database.question')
 
@@ -12,7 +15,7 @@ class QuestionType(Enum):
     YES_NO = 'yesNo'
 # end class
 
-class Question(Entity):
+class Question(DatabaseEntity):
     '''Question for a user to gather profile information.
     '''
 
@@ -61,7 +64,7 @@ class Question(Entity):
     # end def
 # end class
 
-class UserQuestion(Entity):
+class UserQuestion(DatabaseEntity):
     '''Question answered by a user.
 
     `id` is the index in the user's questions list.
