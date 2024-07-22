@@ -8,9 +8,6 @@ import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 final logger = Logger('login_signup');
-final usersRef = FirebaseFirestore.instance.collection("User").withConverter<ProactUser>(
-  fromFirestore: (snapshot, _) => ProactUser.fromJson(snapshot.data()!), 
-  toFirestore: (user, _) => user.toJson());
 
 enum AuthExceptionCode implements Comparable<AuthExceptionCode> {
   invalidCredential(value: 'invalid-credential'),
@@ -144,8 +141,7 @@ Future<void> registerWithEmail(String email, String password) async {
         username: "",
         onboarded: false, 
         location: "",
-        missions: [],
-        missionsId: []
+        projects: []
       )
     );
 

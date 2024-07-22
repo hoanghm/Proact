@@ -5,6 +5,7 @@ firebase_admin_cert.json
 .idea/
 **/archive/
 **/test_*
+**/old_**
 
 # custom local files
 local/

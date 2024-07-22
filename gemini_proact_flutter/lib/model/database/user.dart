@@ -1,5 +1,7 @@
 import 'package:gemini_proact_flutter/model/database/mission.dart';
-class ProactUser extends HasMissions {
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class ProactUser {
   static const String tableName = 'User';
   final String email;
   final String occupation;
@@ -9,6 +11,9 @@ class ProactUser extends HasMissions {
   final List<dynamic> interests;
   List<dynamic> questionnaire = [];
   final bool onboarded;
+  final List<String>? projectIds;
+  List<MissionEntity>? projects;
+
   ProactUser({
     required this.email, 
     List<dynamic>? questionnaire, 
@@ -18,45 +23,52 @@ class ProactUser extends HasMissions {
     required this.username, 
     required this.onboarded, 
     required this.location,
-    super.missionsId,
-    super.missions
+    this.projectIds,
+    this.projects
   }) {
     if (questionnaire != null && questionnaire.isNotEmpty) {
       this.questionnaire = questionnaire;
     }
   }
-  ProactUser.fromJson(Map<String, Object?> json)
-  : this(
-      email: json[UserAttribute.email.name]! as String,
-      username: json[UserAttribute.username.name]! as String,
-      interests: json[UserAttribute.interests.name]! as List<dynamic>,
-      questionnaire: json[UserAttribute.questionnaire.name] as List<dynamic>?,
-      occupation: json[UserAttribute.occupation.name]! as String,
-      onboarded: json[UserAttribute.onboarded.name]! as bool,
-      location: json[UserAttribute.location.name]! as String,
-      others: json[UserAttribute.others.name]! as List<dynamic>,
-      missionsId: json[UserAttribute.missions.name] as List<dynamic>,
-  );
-  @override
-  Map<String, Object?> toJson({String? missionsAlias, int depth=0}) {
-  var map = super.toJson(missionsAlias: missionsAlias ?? UserAttribute.missions.name, depth: depth);
-  map.addAll({
-    UserAttribute.email.name: email,
-    UserAttribute.occupation.name: occupation,
-    UserAttribute.username.name: username,
-    UserAttribute.location.name: location,
-    UserAttribute.others.name: others,
-    UserAttribute.interests.name: interests,
-    UserAttribute.onboarded.name: onboarded,
-    UserAttribute.questionnaire.name: questionnaire
-  });
-    return map;
+  
+  // Factory method to create a ProactUser from a Firestore document
+  factory ProactUser.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return ProactUser(
+      email: data['email'] ?? '',
+      occupation: data['occupation'] ?? '',
+      username: data['username'] ?? '',
+      location: data['location'] ?? '',
+      others: List<dynamic>.from(data['others'] ?? []),
+      interests: List<dynamic>.from(data['interests'] ?? []),
+      questionnaire: List<dynamic>.from(data['questionnaire'] ?? []),
+      onboarded: data['onboarded'] ?? false,
+      projectIds: List<String>.from(data['projects']) ?? [] ,
+      projects: [] // empty at first when retrieved from Firestore, need to then fetch missions
+    );
   }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'email': email,
+      'occupation': occupation,
+      'username': username,
+      'location': location,
+      'others': others,
+      'interests': interests,
+      'questionnaire': questionnaire,
+      'onboarded': onboarded,
+      'projects': projectIds, // Firestore only stores [project ids] for User.projects
+    };
+  }
+
   @override
   String toString() {
-    return '$tableName[${UserAttribute.username}=$username ${UserAttribute.email}=$email]';
+    return '$tableName[username=$username, email=$email]';
   }
 }
+
+
 enum UserAttribute {
   email('email'),
   username('username'),
@@ -65,7 +77,8 @@ enum UserAttribute {
   occupation('occupation'),
   onboarded('onboarded'),
   location('location'),
-  missions('missions'),
+  projectIds('projectIds'),
+  projects('projects'),
   others('others');
   final String name;
   const UserAttribute(this.name);

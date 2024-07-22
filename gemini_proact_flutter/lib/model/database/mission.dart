@@ -1,184 +1,20 @@
-import 'package:gemini_proact_flutter/model/database/metric.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class HasMissions {
-  /// References to child missions.
-  List<String> missionsId = [];
-  /// Child mission instances, generally not populated until fetching using `missionsId`.
-  List<Mission> missions = [];
-
-  HasMissions({
-    List<dynamic>? missionsId,
-    List<dynamic>? missions
-  }) {
-    // missions provided
-    if (missions != null && missions.isNotEmpty) {
-      this.missions = [for (var mission in missions) mission as Mission];
-      missionsId = [
-        for (var mission in missions!) mission.id
-      ];
-    }
-    // mission ids provided
-    else if (missionsId != null && missionsId.isNotEmpty) {
-      this.missionsId = [for (var missionId in missionsId) missionId as String];
-      this.missions = [];
-    }
-  }
-
-  bool hasChildMissions() {
-    return missionsId.isNotEmpty;
-  }
-
-  Map<String, Object?> toJson({String missionsAlias = 'missions', int depth = 0}) {
-    if (depth > 0 && missions.isNotEmpty) {
-      return {
-        missionsAlias: [
-          for (final mission in missions) mission.toJson(missionsAlias: missionsAlias, depth: depth-1)
-        ]
-      };
-    }
-    else {
-      return {
-        missionsAlias: missionsId
-      };
-    }
-  }
-}
-
-class Mission extends HasMissions {
-  static const String tableName = 'Mission';
-
-  String? id;
-  MissionType type;
-  MissionStatus status;
-  String title;
-  String? description;
-  DateTime? deadline;
-  String? styleId;
-  List<Metric> metrics = [];
-
-  Mission({
-    this.id,
-    this.type = MissionType.project,
-    this.status = MissionStatus.inProgress,
-    required this.title,
-    this.description,
-    super.missionsId,
-    super.missions,
-    this.deadline,
-    this.styleId,
-    List<Metric>? metrics
-  }) {
-    if (metrics != null && metrics.isNotEmpty) {
-      this.metrics = metrics;
-    }
-    // override incorrect types
-    if (missionsId.isEmpty) {
-      type = MissionType.step;
-    }
-  }
-
-  Mission.fromJson(Map<String, Object?> json) : this(
-    id: json[MissionAttribute.id.name] as String?,
-    type: MissionType.fromString(json[MissionAttribute.type.name] as String?) ?? MissionType.project,
-    status: MissionStatus.fromString(json[MissionAttribute.status.name] as String?) ?? MissionStatus.inProgress,
-    title: json[MissionAttribute.title.name] as String,
-    description: json[MissionAttribute.description.name] as String?,
-    missionsId: json[MissionAttribute.steps.name] as List<dynamic>?,
-    deadline: (json[MissionAttribute.deadline.name] != null) ? DateTime.tryParse(json[MissionAttribute.deadline.name] as String) : null,
-    styleId: json[MissionAttribute.styleId.name] as String?,
-    metrics: json.containsKey(MissionAttribute.metrics.name) ? [
-      for (var metricJson in json[MissionAttribute.metrics.name] as List<Map<String, Object?>>)
-        Metric.fromJson(metricJson)
-    ] : null
-  );
-
-  @override
-  Map<String, Object?> toJson({String? missionsAlias, int depth = 0}) {
-    var map = super.toJson(missionsAlias: missionsAlias ?? MissionAttribute.steps.name, depth: depth);
-    map.addAll({
-      MissionAttribute.id.name: id,
-      MissionAttribute.type.name: type.name,
-      MissionAttribute.status.name: status.name,
-      MissionAttribute.title.name: title,
-      MissionAttribute.description.name: description,
-      MissionAttribute.deadline.name: deadline,
-      MissionAttribute.styleId.name: styleId,
-      MissionAttribute.metrics.name: [
-        for (var metric in metrics) metric.toJson()
-      ]
-    });
-
-    return map;
-  }
-
-  @override
-  String toString() {
-    return '$tableName[${MissionAttribute.type}=$type ${MissionAttribute.title}="$title"]';
-  }
-}
-
-enum MissionAttribute {
-  id('id'),
-  type('type'),
-  status('status'),
-  title('title'),
-  description('description'),
-  steps('steps'),
-  deadline('deadline'),
-  styleId('styleId'),
-  metrics('metrics');
-
-  final String name;
-
-  const MissionAttribute(this.name);
-
-  static MissionAttribute? fromString(String? name) {
-    if (name == null) return null;
-
-    for (var value in MissionAttribute.values) {
-      if (value.name == name) {
-        return value;
-      }
-    }
-
-    return null;
-  }
-
-  @override
-  String toString() {
-    return name;
-  }
-}
-
-enum MissionType {
-  // DEPRECATED. use mission
+enum MissionPeriodType {
   weekly('weekly'),
-  // DEPRECATED. use project
   ongoing('ongoing'),
-  // Long term, not assigned to a specific interval for completion.
-  project('project'),
-  // Short term, assigned to a single interval (ex. week).
-  mission('mission'),
-  // Has no child missions, smallest unit of task/work.
-  step('step');
+  unspecified('unspecified');
 
   final String name;
 
-  const MissionType(this.name);
+  const MissionPeriodType(this.name);
 
-  static MissionType? fromString(String? name) {
+  static MissionPeriodType? fromString(String? name) {
     if (name == null) {
       return null;
     }
-    // map deprecated names to equivalents
-    else if (name == MissionType.weekly.name) {
-      return MissionType.mission;
-    }
-    else if (name == MissionType.ongoing.name) {
-      return MissionType.project;
-    }
 
-    for (var value in MissionType.values) {
+    for (var value in MissionPeriodType.values) {
       if (value.name == name) {
         return value;
       }
@@ -196,7 +32,8 @@ enum MissionType {
 enum MissionStatus {
   notStarted('not started'),
   inProgress('in progress'),
-  done('done');
+  done('done'),
+  expired('expired');
 
   final String name;
 
@@ -218,4 +55,88 @@ enum MissionStatus {
   String toString() {
     return name;
   }
+}
+
+// MissionEntity can represent either a Project, Mission, or Step
+class MissionEntity {
+  static const String tableName = 'Mission';
+
+  String id;
+  String title;
+  List<MissionEntity> steps;
+  List<String> stepIds;
+  MissionPeriodType? type;
+  MissionStatus status;
+  String? description;
+  DateTime? deadline;
+  String? styleId;
+  int ecoPoints;
+  int CO2InKg;
+  String? eventId; 
+  int regenerationLeft; 
+  DateTime? createdTimestamp;
+
+  // Constructor
+  MissionEntity({
+    required this.id,
+    required this.title,
+    required this.stepIds,
+    required this.steps,
+    required this.type,
+    required this.status,
+    this.description,
+    this.deadline,
+    this.styleId,
+    this.ecoPoints = 0,
+    this.CO2InKg = 0,
+    this.eventId,
+    this.regenerationLeft = -1,
+    this.createdTimestamp
+  });
+
+  // Method to convert a Firestore document to a BaseMission instance
+  factory MissionEntity.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return MissionEntity(
+      id: doc.id,
+      title: data['title'] ?? '',
+      steps: [], // empty at first and must be populated after
+      stepIds: List<String>.from(data['steps']),
+      type: MissionPeriodType.values.firstWhere(
+        (e) => e.toString() == data['type'],
+        orElse: () => MissionPeriodType.unspecified,
+        ),
+      status: MissionStatus.values.firstWhere(
+        (e) => e.toString() == data['status'],
+        orElse: () => MissionStatus.notStarted,
+        ),
+      description: data['description'],
+      deadline: data['deadline'] != null ? (data['deadline'] as Timestamp).toDate() : null,
+      styleId: data['styleId'],
+      ecoPoints: data['ecoPoints'] ?? 0,
+      CO2InKg: data['CO2InKg'] ?? 0,
+      eventId: data['eventId'],
+      regenerationLeft: data['regenerationLeft'] ?? -1,
+      createdTimestamp: data['createdTimestamp'] != null ? (data['createdTimestamp'] as Timestamp).toDate() : null,
+    );
+  }
+
+  // Method to convert a MissionEntity instance to a Firestore document
+  Map<String, dynamic> toFirestore() {
+    return {
+      'title': title,
+      'steps': stepIds,
+      'type': type.toString(),
+      'status': status.toString(),
+      'description': description,
+      'deadline': deadline != null ? Timestamp.fromDate(deadline!) : null,
+      'styleId': styleId,
+      'ecoPoints': ecoPoints,
+      'CO2InKg': CO2InKg,
+      'eventId': eventId,
+      'regenerationLeft': regenerationLeft,
+      'createdTimestamp': createdTimestamp != null ? Timestamp.fromDate(createdTimestamp!) : null,
+    };
+  }
+
 }

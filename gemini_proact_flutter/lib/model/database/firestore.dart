@@ -16,11 +16,11 @@ final questionAnswerRef = FirebaseFirestore.instance.collection("QuestionAnswer"
   fromFirestore: (snapshot, _) => QuestionAnswer.fromJson(snapshot.data()!),
   toFirestore: (question, _) => question.toJson());
 final usersRef = FirebaseFirestore.instance.collection(ProactUser.tableName).withConverter<ProactUser>(
-  fromFirestore: (snapshot, _) => ProactUser.fromJson(snapshot.data()!), 
-  toFirestore: (user, _) => user.toJson());
-final missionsRef = FirebaseFirestore.instance.collection(Mission.tableName).withConverter<Mission>(
-  fromFirestore: (snapshot, _) => Mission.fromJson(snapshot.data()!),
-  toFirestore: (mission, _) => mission.toJson()
+  fromFirestore: (snapshot, _) => ProactUser.fromFirestore(snapshot), 
+  toFirestore: (user, _) => user.toFirestore());
+final missionsRef = FirebaseFirestore.instance.collection(MissionEntity.tableName).withConverter<MissionEntity>(
+  fromFirestore: (snapshot, _) => MissionEntity.fromFirestore(snapshot),
+  toFirestore: (mission, _) => mission.toFirestore()
 );
 
 /// Get currently signed in user data, if applicable.
@@ -29,6 +29,7 @@ Future<ProactUser?> getUser({String? vaultedId}) async {
   DocumentSnapshot<ProactUser>? userDoc = await getUserDocument(vaultedId: vaultedId);
   if (userDoc == null) return null;
   try {
+    logger.info('User info ${userDoc.data()}');
     ProactUser currentUser = userDoc.data()!;
     logger.info("found db user username=${currentUser.username} for firebase auth user");
     return currentUser;
@@ -103,38 +104,89 @@ Future<ProactUser?> updateUser(Map<String, Object> newFields, List<Map<String, O
   }
 }
 
-/// Fetch missions by id.
-/// 
-/// @param `depth` How deep to follow recursive child mission references. `0` means
-/// child missions will not be fetched.
-Future<List<Mission>> getMissions(List<String> missionIds, {int depth = 0}) async {
-  List<Mission> missions = [];
-  logger.fine('fetch missions ${missionIds.join(',')} to depth $depth');
-
-  await Future.forEach<String>(missionIds, (missionId) async {
-    final missionDoc = await missionsRef.doc(missionId).get();
-    
-    if (missionDoc.exists) {
-      Mission mission = missionDoc.data()!;
-      missions.add(mission);
-
-      if (depth > 0 && mission.missionsId.isNotEmpty) {
-        mission.missions = await getMissions(mission.missionsId, depth: depth-1);
-      }
-    }
-    else {
-      logger.severe('did not find mission $missionId in database');
-    }
-  });
-
-  return missions;
+/// Fetch mission entities (Project, Misison, Step) by ids. Only returns successfully retrieved missions, not nulls.
+/// depth = 0 includes only itself, depth = 1 also include direct children, and so on
+Future<List<MissionEntity>> getMissionEntitiesByIds(List<String> ids, {int depth = 0}) async {
+  // Create a list of futures for getting missions
+  List<Future<MissionEntity?>> missionFutures = ids.map((id) => getMissionEntityById(
+    id, 
+    depth: depth
+  )).toList();
+  // Await all futures to complete
+  List<MissionEntity?> missions = await Future.wait(missionFutures);
+  // Filter out null values and return only non-null MissionEntity instances
+  return missions.whereType<MissionEntity>().toList();
 }
 
-/// Fetch missions assigned to the given user.
-/// 
+/// Fetch a Mission Entity (Project, Misison, Step) by id. Returns 'null' if not found or error occured
+/// depth = 0 includes only itself, depth = 1 also includes its direct children, and so on
+Future<MissionEntity?> getMissionEntityById(String id, {int depth = 0}) async {
+  MissionEntity? mission;
+  try {
+    DocumentSnapshot<MissionEntity> doc = await missionsRef.doc(id).get();
+    // Found matching mission
+    if (doc.exists) {
+      mission = doc.data();
+      // Check if mission was converted successfully
+      if (mission != null) {
+        if (depth > 0 && mission.stepIds.isNotEmpty) {
+          // First retrieve the step objects
+          mission.steps = await getMissionEntitiesByIds(mission.stepIds, depth: depth-1);
+        }
+        logger.info("Mission $id retrieved successfully.");
+        return mission;
+      } 
+      logger.severe('Error converting mission $id as an object. doc.data() returned "null"');
+      return null;
+    }
+    else {
+      logger.severe('did not find mission $id in the database');
+      return null;
+    }
+  } 
+  catch (e, stackTrace) {
+    logger.severe('Error getting mission $id: $e. Stacktrace: $stackTrace');
+    return null;
+  }
+}
+
+
+// Get and return an user's currently active projects given 'depth' and 'type'
+// depth = 0 includes only the projects, depth = 1 also includes its missions, depth 2 and onward include mission steps and their child steps
+Future<List<MissionEntity>?> getUserActiveProjects ({
+    ProactUser? user, 
+    int depth = 0, 
+    MissionPeriodType type = MissionPeriodType.weekly
+  }) async {
+
+  user = user ?? await getUser();
+  if (user == null) {
+    logger.warning('cannot fetch missions for missing user');
+    return null;
+  }
+  logger.fine('fetch missions for user $user to depth $depth');
+
+  // first fetch all user projects 
+  await fetchAllUserProjects(user: user, depth: 0); // depth 0 is enough since we only care about Projects here
+  // determine the project ids where status is either "in progress" or "not started", with the specified period type
+  List<String> activeProjectIds = user.projects!.where((project) {
+      return 
+      (project.status == MissionStatus.inProgress || project.status == MissionStatus.notStarted)
+      && project.type == type
+      ;
+  }).map((project) => project.id).toList();
+
+  // Now fetch the details of those projects and return
+  Future<List<MissionEntity>?> activeProjects = getMissionEntitiesByIds(activeProjectIds, depth: depth);
+
+  return activeProjects;
+}
+
+
+/// Fetch ALL projects assigned to the given user.
 /// @param `depth` How deep to follow recursive child mission references. Works
 /// same way as `getMissions(depth)`.
-Future<void> getUserMissions({ProactUser? user, int depth = 0}) async {
+Future<void> fetchAllUserProjects({ProactUser? user, int depth = 0}) async {
   user = user ?? await getUser();
   if (user == null) {
     logger.warning('cannot fetch missions for missing user');
@@ -142,7 +194,7 @@ Future<void> getUserMissions({ProactUser? user, int depth = 0}) async {
   }
   logger.fine('fetch missions for user $user to depth $depth');
 
-  user.missions = await getMissions(user.missionsId, depth: depth);
+  user.projects = await getMissionEntitiesByIds(user.projectIds!, depth: depth);
 }
 
 // Add this method to update user interests
@@ -156,11 +208,11 @@ final FirebaseAuth _auth = FirebaseAuth.instance;
         await db.collection('User').doc(userId).update({
           'interests': newInterests,
         });
-        print('User interests updated successfully.');
+        logger.fine('User interests updated successfully.');
       } else {
-        print('No user is currently signed in.');
+        logger.warning('No user is currently signed in.');
       }
     } catch (e) {
-      print('Error updating user interests: $e');
+      logger.severe('Error updating user interests: $e');
     }
   }

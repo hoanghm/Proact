@@ -157,6 +157,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           confirmPasswordController.clear();
 
           ProactUser? userData = await getUser();
+          logger.info('userData: $userData');
           if (userData == null) {
             logger.info("Create new account from login/signup, THEN to onboarding");
             // TODO: If for any reason an issue pops up where the created profile is not made yet, do something about that future me -ET
@@ -224,11 +225,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
 
   void navigateToPage(Widget page) {
     hideLoadingCircle();
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => page),
-    );
+    if(mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => page),
+      );
+    }
   }
 
   @override
