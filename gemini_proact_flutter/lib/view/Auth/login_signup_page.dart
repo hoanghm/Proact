@@ -29,7 +29,7 @@ const titleMessage = LoginSignupConstant('Let\'s save the environment!', 'The be
 const emailHint = LoginSignupConstant('Username or email', 'Email address');
 const submitLabel = LoginSignupConstant('Log in', 'Register');
 const toggleLoginSignupMessage = LoginSignupConstant('Not a member?', 'Already have an account?');
-const toggleLoginSignupLabel = LoginSignupConstant('Register now', 'Log in now');
+const toggleLoginSignupLabel = LoginSignupConstant(' Register now', ' Log in now');
 
 /// User login or signup/register page.
 class LoginSignupPage extends StatefulWidget {
