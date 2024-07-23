@@ -1,41 +1,36 @@
-from typing import *
 import logging
+
+import attrs
+from attrs import define, field, NOTHING
+from typing import *
+from typing_extensions import override
+
 from .DatabaseEntity import DatabaseEntity
-from .Question import UserQuestion
-from .OldMission import HasMissions
 
 logger = logging.getLogger('proact.database.user')
 
-class User(HasMissions):
-    '''Proact user, compatible w db table.
+@define
+class User(DatabaseEntity):
     '''
+    Represents an User, id will be auto generated if not provided
+    '''
+    username: str = field(default=None)
+    email: str = field(default=None, repr=True)
+    occupation: str = field(default=None)
+    location: str = field(default=None)
+    interests: List[str] = field(factory=list)
+    projects: List[str] = field(factory=list)
+    project_ids: List[str] = field(factory=list)
 
     @classmethod
-    def _attr_keys(cls) -> List[str]:
-        return [
-            'username',
-            'email',
-            'vaultedId',
-            'occupation',
-            'location',
-            'interests',
-            'questionnaire',
-            'others'
-        ] + super()._attr_keys()
-
-
-    @classmethod
-    def _summary_keys(cls) -> int:
-        return 2
-
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.username: Optional[str] = kwargs.get('username')
-        self.email: str = kwargs['email']
-        self.occupation: Optional[str] = kwargs.get('occupation')
-        self.location: Optional[str] = kwargs.get('location')
-        self.interests: List[str] = kwargs.get('interests', [])
-        self.questionnaire: List[UserQuestion] = kwargs.get('questionnaire', [])
+    def from_dict(cls, input_dict:Dict): 
+        return cls(
+            id = input_dict.get('id'),
+            username = input_dict.get('username'),
+            email = input_dict.get('email'),
+            occupation = input_dict.get('occupation'),
+            location = input_dict.get('location'),
+            interests = input_dict.get('interests'),
+            project_ids = input_dict.get('projects')
+        )
 
