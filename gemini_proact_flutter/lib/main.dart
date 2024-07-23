@@ -34,8 +34,8 @@ void main() async {
   await signOutUser();
   
   // Obtain a list of the available cameras on the device.
-  late List<CameraDescription> _cameras;
-  _cameras = await availableCameras();
+  // late List<CameraDescription> _cameras;
+  // _cameras = await availableCameras();
 
   runApp(const Proact());
 }
