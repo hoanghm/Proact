@@ -1,91 +1,82 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:gemini_proact_flutter/view/Mission/components/home_card_label.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class HomeCard extends StatefulWidget {
-  const HomeCard({super.key});
+class HomeCard extends StatelessWidget {
+  const HomeCard({Key? key}) : super(key: key);
 
   @override
-  HomeCardState createState() {
-    return HomeCardState();
-  }
-}
-
-class HomeCardState extends State<HomeCard> {
-  @override
-  Widget build (BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 25, right: 25),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade400,
-        borderRadius: BorderRadius.circular(15)
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            _buildProgressCircle(),
+            const SizedBox(width: 20),
+            Expanded(child: _buildInfoColumn()),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Column(
-            children: <Widget>[
-              SizedBox(
-                width: 180,
-                height: 180,
-                child: Stack(
-                  children: <Widget>[
-                    const Center(
-                      child: SizedBox(
-                        width: 140,
-                        height: 140,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 10,
-                          value: 0.75,
-                          color: Colors.green,
-                          backgroundColor: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          RichText(
-                            text: const TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'CO',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 36
-                                  )
-                                ),
-                                TextSpan(
-                                  text: '2',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 36,
-                                    fontFeatures: [FontFeature.subscripts()]
-                                  )
-                                )
-                              ]
-                            ),
-                          ),
-                          const Icon(Icons.arrow_upward, size: 38, color: Colors.green)
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+    );
+  }
+
+  Widget _buildProgressCircle() {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.blue, width: 8),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'CO₂',
+              style: GoogleFonts.roboto(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
-            ],
+            ),
+            Icon(Icons.arrow_upward, size: 24, color: Colors.blue),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildInfoRow(Icons.scale, '50 Metric'),
+        const SizedBox(height: 12),
+        _buildInfoRow(Icons.person, 'Recruit'),
+        const SizedBox(height: 12),
+        _buildInfoRow(Icons.title, 'Title'),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 24, color: Colors.blue),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: GoogleFonts.roboto(
+            fontWeight: FontWeight.w500,
+            fontSize: 18,
+            color: Colors.black87,
           ),
-          const Column(
-            children: [
-              HomeCardLabel(label: "50 Metric"),
-              Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: "Recruit"),
-              Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: "Title"),
-            ],
-          )
-        ],
-      )
+        ),
+      ],
     );
   }
 }
