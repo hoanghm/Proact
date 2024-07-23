@@ -20,39 +20,35 @@ class MissionHomePageState extends State<MissionHomePage> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(
-                  widget.user.username, 
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w500
-                  )),
-                ProactLogo(size: 22),
-                IconButton(
-                  onPressed: () {
-                    // TODO: Add onPressed functionality for whatever this does
-                  }, 
-                  icon: const Icon(
-                    Icons.menu,
-                    size: 35,
-                  )
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Text(
+                widget.user.username, 
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500
+                )),
+              ProactLogo(size: 22),
+              IconButton(
+                onPressed: () {
+                  // TODO: Add onPressed functionality for whatever this does
+                }, 
+                icon: const Icon(
+                  Icons.menu,
+                  size: 35,
                 )
-              ],
-            ),
-            const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
-            const HomeCard(),
-            const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
-            const WeeklyMissionsTabView(),
-            const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
-            const OngoingMissionsTabView(),
-            const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0))
-          ],
-        ),
+              )
+            ],
+          ),
+          const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
+          const HomeCard(),
+          const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
+          WeeklyMissionsTabView(),
+          SizedBox(height: 10)
+        ],
       )
     );
   }
