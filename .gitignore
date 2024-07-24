@@ -1,5 +1,6 @@
 # firebase admin certification json file
 firebase_admin_cert.json
+cloudrun_cert.json
 
 # archive and test folders
 .idea/
