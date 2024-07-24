@@ -83,7 +83,7 @@ def web_on_apikey_gemini():
 def web_on_ping():
     """Handle web request to test connection.
     """
-    return 'success'
+    return 'ping received'
 
 
 
