@@ -30,6 +30,9 @@ jobs:
           gcloud builds submit --tag "gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_SERVICE }}" ${{github.workspace}}/gemini_proact_server/
 
       - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ secrets.GCP_SERVICE }} --image "gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_SERVICE }}" --region ${{ secrets.GCP_REGION }}
+        run: >
+          gcloud run deploy ${{ secrets.GCP_SERVICE }} 
+          --image "gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_SERVICE }}" 
+          --region ${{ secrets.GCP_REGION }}
+          --set-env-vars FLASK_DEBUG=0,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }},FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }},FIREBASE_ADMIN_CERT_ENCODING=${{ secrets.FIREBASE_ADMIN_CERT_ENCODING }}
  
