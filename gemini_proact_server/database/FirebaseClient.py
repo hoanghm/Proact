@@ -15,6 +15,7 @@ from google.api_core import exceptions
 
 from .entities.User import *
 from .entities.Mission import *
+from utils import decode_base64_to_dict
 
 from attrs import define, field, NOTHING
 from typing import *
@@ -23,7 +24,7 @@ from typing import *
 @define
 class FirebaseClient:
     # input
-    firebase_cert_path: str = field(default='service_account_keys/firebase_admin_cert.json', eq=False)
+    firebase_cert_encoding: str = field(default=None)
 
     # internal
     logger: logging.Logger = field(init=False)
@@ -35,9 +36,14 @@ class FirebaseClient:
         self.logger = logging.getLogger("proact.firebase_client")
 
         # Authenticate and initalize firebase_admin
-        self.firebase_cert_path = os.environ.get('FIREBASE_ADMIN_CERT_PATH', self.firebase_cert_path)
-        self.logger.debug(f'load firebase admin credentials from {self.firebase_cert_path}')
-        cred = credentials.Certificate(self.firebase_cert_path)
+        firebase_cert_encoding = os.environ.get('FIREBASE_ADMIN_CERT_ENCODING', self.firebase_cert_encoding)
+        if firebase_cert_encoding is None:
+            msg = "'firebase_cert_encoding' must be set, or env variable 'FIREBASE_ADMIN_CERT_ENCODING' must be available."
+            self.logger.error(f"RuntimeError: {msg}")
+            raise RuntimeError(msg)
+
+        firebase_cert_dict = decode_base64_to_dict(firebase_cert_encoding)
+        cred = credentials.Certificate(firebase_cert_dict)
         try:
             firebase_admin.initialize_app(cred)
         except ValueError: 
