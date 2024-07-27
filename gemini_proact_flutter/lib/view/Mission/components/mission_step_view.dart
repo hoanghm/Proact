@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_step_tab.dart';
+import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
+import 'package:logging/logging.dart' show Logger;
+
+final logger = Logger((MissionStepView).toString());
 
 class MissionStepView extends StatefulWidget {
-  const MissionStepView({super.key});
+  final List<MissionEntity> steps;
+  final void Function(bool) onStepChange;
+  const MissionStepView({super.key, required this.steps, required this.onStepChange});
   
   @override
   MissionStepViewState createState() {
@@ -11,6 +17,15 @@ class MissionStepView extends StatefulWidget {
 }
 
 class MissionStepViewState extends State<MissionStepView> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void onCheckboxPress (bool status) {
+    widget.onStepChange(status);
+  }
+
   @override
   Widget build(BuildContext context) {
      return Expanded(
@@ -25,10 +40,13 @@ class MissionStepViewState extends State<MissionStepView> {
           child: Column(
             children: [
               const Padding(padding: EdgeInsets.only(top: 10)),
-              MissionStepTab(stepDescription: "Research local restaurants that use sustainable ingredients and reduce food waste."),
-              const Padding(padding: EdgeInsets.only(top: 10)),
-              MissionStepTab(stepDescription: "Research local restaurants that use sustainable ingredients and reduce food waste."),
-              const Padding(padding: EdgeInsets.only(top: 10))
+              for (int i = 0; i < widget.steps.length; i++) 
+                MissionStepTab(
+                  stepDescription: widget.steps[i].title,
+                  initCheckState: false,           
+                  onCheckboxPress: onCheckboxPress,   
+                ),
+                const Padding(padding: EdgeInsets.only(top: 10)),  
             ],
           )
         ),
