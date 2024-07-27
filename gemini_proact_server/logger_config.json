@@ -17,14 +17,6 @@
     },
     
     "handlers": {
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "level": "WARNING",
-            "formatter": "detailed", 
-            "filename": "logs/gemini.log",
-            "maxBytes": 1000000,
-            "backupCount": 3 
-        },
         "stdout": {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
@@ -37,8 +29,7 @@
         "proact": {
             "level": "DEBUG", 
             "handlers": [
-                "stdout",
-                "file"
+                "stdout"
             ]
         }
     }

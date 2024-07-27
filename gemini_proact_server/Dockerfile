@@ -6,8 +6,6 @@ ENV PYTHONUNBUFFERED True
 # Copy local code to the container image.
 ENV APP_HOME /app
 WORKDIR $APP_HOME
-
-# Copy the local files to the container image
 COPY . ./
 
 # Install production dependencies.
