@@ -52,7 +52,7 @@ class OngoingMissionsTabViewState extends State<OngoingMissionsTabView> {
                       ),
                     ),
                     const Padding(padding: EdgeInsets.only(top: 20)),
-                    MissionTab(),
+                    // MissionTab(),
                     const Padding(padding: EdgeInsets.only(top: 20)),
                   ],
                 ),

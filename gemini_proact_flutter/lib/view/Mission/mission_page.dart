@@ -1,11 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_progress_card.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_step_view.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity, MissionStatus;
 
 class MissionPage extends StatefulWidget {
-  const MissionPage({super.key});
+  final MissionEntity mission;
+  const MissionPage({super.key, required this.mission});
   @override
   MissionPageState createState() {
     return MissionPageState();
@@ -13,21 +16,48 @@ class MissionPage extends StatefulWidget {
 }
 
 class MissionPageState extends State<MissionPage> {
-  int currStep = 1;
+  int currStep = 0;
   int totalSteps = 1;
   int rewardAmount = 0;
   String stepDescription = "";
+
+  void updateStepsCompleted(bool newState) {
+    int value = currStep;
+    if (newState) {
+      value++;
+    } else {
+      value--;
+    }
+
+    if (value < 0) {
+      value = 0;
+    }
+
+    if (value > totalSteps) {
+      value = totalSteps;
+    }
+
+    setState(() {
+      currStep = value;
+    });
+  }
+
 
   @override
   void initState() {
     super.initState();
     
-    //TODO: Init step count. mission description, and mission reward
+    int numStepsCompleted = 0;
+    for (int i = 0; i < widget.mission.steps.length; i++) {
+      if (widget.mission.steps[i].status == MissionStatus.done) {
+        numStepsCompleted++;
+      }
+    }
     setState(() {
-        currStep = 1;
-        totalSteps = 2;
-        rewardAmount = 50;
-        stepDescription = "Many local businesses in California are committed to sustainability. This mission encourages you to support these businesses and promote their efforts.";
+        currStep = numStepsCompleted;
+        totalSteps = widget.mission.steps.length;
+        rewardAmount = widget.mission.ecoPoints;
+        stepDescription = widget.mission.description ?? "";
       } 
     );
   }
@@ -38,7 +68,7 @@ class MissionPageState extends State<MissionPage> {
       appBar: AppBar(
         centerTitle: true,
         title: Text(
-          "Mission Title",
+          widget.mission.title,
           style: GoogleFonts.spaceGrotesk(
             fontSize: 24
           )
@@ -54,54 +84,57 @@ class MissionPageState extends State<MissionPage> {
               description: stepDescription
             ),
             const Padding(padding: EdgeInsets.only(top: 20)),
-            MissionStepView(),
+            MissionStepView(
+              steps: widget.mission.steps,
+              onStepChange: updateStepsCompleted,
+            ),
             const Padding(padding: EdgeInsets.only(top: 10)),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Text(
-                    "Mission Photos",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16,
-                      decoration: TextDecoration.underline
-                    ),
-                  ),
-                  const Padding(padding: EdgeInsets.only(top: 10)),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          color: Colors.grey,
-                        ),
-                        const Padding(padding: EdgeInsets.only(right: 10)),    
-                        Container(
-                          width: 50,
-                          height: 50,
-                          color: Colors.grey,
-                        ),
-                        const Padding(padding: EdgeInsets.only(right: 10)),
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: const BoxDecoration(
-                            color: Colors.grey
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            size: 50,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                  const Padding(padding: EdgeInsets.only(top: 20))
-                ],
-              ),
-            )
+            // Container(
+            //   margin: const EdgeInsets.symmetric(horizontal: 20),
+            //   child: Column(
+            //     children: [
+            //       Text(
+            //         "Mission Photos",
+            //         style: GoogleFonts.spaceGrotesk(
+            //           fontSize: 16,
+            //           decoration: TextDecoration.underline
+            //         ),
+            //       ),
+            //       const Padding(padding: EdgeInsets.only(top: 10)),
+            //       SingleChildScrollView(
+            //         scrollDirection: Axis.horizontal,
+            //         child: Row(
+            //           children: [
+            //             Container(
+            //               width: 50,
+            //               height: 50,
+            //               color: Colors.grey,
+            //             ),
+            //             const Padding(padding: EdgeInsets.only(right: 10)),    
+            //             Container(
+            //               width: 50,
+            //               height: 50,
+            //               color: Colors.grey,
+            //             ),
+            //             const Padding(padding: EdgeInsets.only(right: 10)),
+            //             Container(
+            //               width: 50,
+            //               height: 50,
+            //               decoration: const BoxDecoration(
+            //                 color: Colors.grey
+            //               ),
+            //               child: const Icon(
+            //                 Icons.add,
+            //                 size: 50,
+            //               ),
+            //             )
+            //           ],
+            //         ),
+            //       ),
+            //       const Padding(padding: EdgeInsets.only(top: 20))
+            //     ],
+            //   ),
+            // )
           ],
         ),
       )

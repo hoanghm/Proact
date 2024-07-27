@@ -41,10 +41,13 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: SafeArea(
-        child: <Widget>[
-          MissionHomePage(user: widget.user!),
-          Profile(user: widget.user!,)
-        ][_currentPageIndex]
+        child: IndexedStack(
+          index: _currentPageIndex,
+          children: [
+            MissionHomePage(user: widget.user!),
+            Profile(user: widget.user!,)
+          ]
+        )
       ) 
     );
   }

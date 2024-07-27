@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_tab.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
 
 class WeeklyMissionsTabView extends StatefulWidget {
-  const WeeklyMissionsTabView({super.key});
+  final List<MissionEntity> missions;
+  const WeeklyMissionsTabView({super.key, required this.missions});
 
   @override 
   WeeklyMissionsTabViewState createState() {
@@ -12,6 +14,8 @@ class WeeklyMissionsTabView extends StatefulWidget {
 }
 
 class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
+  final int day = DateTime.now().weekday;
+  
   @override
   Widget build (BuildContext context) {
     return Expanded(
@@ -50,23 +54,24 @@ class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
                           widthFactor: 0.8,
                           child: LinearProgressIndicator(
                             minHeight: 30,
-                            value: 0.5,
+                            value: day / 7,
                             backgroundColor: Colors.grey.shade300,
                           ),
                         ),
                         const Padding(padding: EdgeInsets.only(top: 20)),
-                        MissionTab(),
-                        const Padding(padding: EdgeInsets.only(top: 20)),
-                        MissionTab(),
-                        const Padding(padding: EdgeInsets.only(top: 20)),
-                        MissionTab(),
-                        const Padding(padding: EdgeInsets.only(top: 20)),
+                        for (int i = 0; i < widget.missions.length; i++) 
+                          MissionTab(
+                            mission: widget.missions[i],
+                            index: i + 1,
+                          ),
+                          const Padding(padding: EdgeInsets.only(top: 20))                    
                       ],
                     ),
                   ),
                 ),
               ),
-            )
+            ),
+            const SizedBox(height: 20)
           ],
         )
       ),
