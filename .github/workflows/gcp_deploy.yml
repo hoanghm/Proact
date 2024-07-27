@@ -1,0 +1,38 @@
+name: Deploy Flask app to Google Cloud Run
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 'latest'
+          project_id: ${{ secrets.GCP_PROJECT }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker
+
+      - name: Build and push Docker image
+        run: |
+          gcloud builds submit --tag "gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_SERVICE }}" ${{github.workspace}}/gemini_proact_server/
+
+      - name: Deploy to Cloud Run
+        run: >
+          gcloud run deploy ${{ secrets.GCP_SERVICE }} 
+          --image "gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_SERVICE }}" 
+          --region ${{ secrets.GCP_REGION }}
+          --set-env-vars FLASK_DEBUG=0,GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }},FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }},FIREBASE_ADMIN_CERT_ENCODING=${{ secrets.FIREBASE_ADMIN_CERT_ENCODING }}
+ 
