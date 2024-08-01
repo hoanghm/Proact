@@ -120,6 +120,13 @@ class GeminiClient:
         return past_missions_str    
     
 
+    def _parse_str_as_json(self, json_str:str) -> dict:
+        if '```json' in json_str: # common error 
+            json_str = json_str.replace('```json', '').replace('```', '')
+        result = json.loads(json_str)
+        return result
+    
+
     def _parse_weekly_project(
             self, 
             missions_str: List[str], # list of projects
@@ -130,10 +137,8 @@ class GeminiClient:
 
         :raises: `JsonDecodeError` on parse failure.
         '''
-
-        if '```json' in missions_str: # common error 
-            missions_str = missions_str.replace('```json', '').replace('```', '')
-        raw_missions = json.loads(missions_str)
+        # convert missions_str to a dict
+        raw_missions = self._parse_str_as_json(missions_str)
 
         # first create empty project without missions
         project = WeeklyProject(
@@ -148,6 +153,10 @@ class GeminiClient:
                 title = raw_mission['title'],
                 description = raw_mission['description']
             )
+            # Get mission ecopoint
+            mission.ecoPoints = self._evaluate_mission_ecopoint(
+                mission_str=json.dumps(raw_mission, indent=4)
+            )[0]         
             # Create mission steps
             steps = []
             for step_str in raw_mission['steps']:
@@ -416,6 +425,66 @@ class GeminiClient:
         return tool_output
 
 
+    def _evaluate_mission_ecopoint(self, mission_str:str, max_retry:int=3) -> Tuple[int, str]:
+        '''
+        Given a mission as str, return a tuple of 2 values: [EcoPoint, reason]
+        '''
+        prompt = f'''
+        Your job is to evaluate how many meaningful an environmental mission mentioned below is worth 
+        based on its environmental impact and difficulty to complete. 
+        Difficulty to complete should be on a scale of 1 to 10. 
+        Environmental impact should be on a scale of 1 to 10. 
+
+        Examples of how many points to give:
+        - Host a clothing swap among your friends --> Difficulty = 3, Impact = 6
+        - Plant a tree --> Difficulty = 8, Impact = 8
+        - Bike to work/school instead of driving --> Difficulty = 9, Impact = 10
+        
+        Give your answer in JSON format:
+        {{
+            'difficulty': <an integer from 1 to 10>,
+            'impact': <an integer from 1 to 10,
+            'reason': <brief explanation>
+        }} 
+        
+        Environmental mission:
+        {mission_str}
+        '''
+        # get answer from Gemini
+        answer = self._submit_prompt(prompt)
+
+        # parse answer and calculate ecopoint
+        ecopoint: int 
+        reason: str
+        try:
+            evaluation = self._parse_str_as_json(json_str=answer)
+            difficulty = evaluation['difficulty']
+            impact = evaluation['impact']
+            reason = evaluation['reason']
+            ecopoint = difficulty * 5 + impact * 5 # ranges from 20 to 100
+        except Exception as e: # recursively try again until good or `max_retry` is reached 
+            # too many errors occured
+            if max_retry == 0:
+                msg = f"Max retry occured when evaluating mission EcoPoint.\n mission_str: \n {mission_str}"
+                self.logger.error(msg)
+                raise RuntimeError(msg)
+            else:
+                self.logger.warning(f"Encountered error when evaluating ecopoint. Retry left after this attempt = {max_retry-1}. \n Error: {e}")
+                ecopoint, reason = self._evaluate_mission_EcoPoint(
+                    mission_str=mission_str,
+                    max_retry=max_retry-1
+                )
+        self.logger.debug(f"For mission {mission_str[:50]}..., ecoPoint evaluated = {ecopoint}.")
+        return ecopoint, reason
+
+
+        
+
+
+
+
+
+
 # test driver
 if __name__ == "__main__":
     from dotenv import load_dotenv
@@ -435,7 +504,7 @@ if __name__ == "__main__":
     # Try get new ongoing missions
     project = client.generate_weekly_project(
         user_id="IFXLaAIczXW3hvYansv1DXrH7iH2",
-        num_missions=2,
-        debug=True
+        num_missions=3,
+        debug=False
     )
     breakpoint()
