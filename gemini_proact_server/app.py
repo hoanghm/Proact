@@ -48,7 +48,7 @@ def submit_prompt():
 def get_weekly_missions(user_id):
     new_missions:List[Dict] 
     new_missions = gemini_client.generate_weekly_project(
-        user=user_id
+        user_id=user_id
     )
     response = {
         'new_missions': new_missions
