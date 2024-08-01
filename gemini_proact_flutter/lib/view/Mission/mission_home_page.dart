@@ -22,12 +22,13 @@ class MissionHomePage extends StatefulWidget {
 
 class MissionHomePageState extends State<MissionHomePage> {
   List<MissionEntity> activeMissions = [];
+  int currEcoPoints = 0;
+  int currLevel = 1;
   void getUserMissions () async {
-    List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 1);
+    List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 2);
     if (missions == null) {
       return;
     }
-    logger.info(missions.first.steps);
     setState(() {
       activeMissions = missions;
     });
@@ -39,6 +40,16 @@ class MissionHomePageState extends State<MissionHomePage> {
       getUserMissions();
     });
   }
+
+  void increasePoints(int rewardAmount) {
+    setState(() {
+      currEcoPoints += rewardAmount;
+      currLevel = currEcoPoints ~/ 100;
+    });
+
+    // TODO: Have the points increase reflect on Firebase
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -66,9 +77,12 @@ class MissionHomePageState extends State<MissionHomePage> {
             ],
           ),
           const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
-          const HomeCard(),
+          HomeCard(
+            currentEcoPoints: currEcoPoints, 
+            currentLevel: currLevel
+          ),
           const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
-          WeeklyMissionsTabView(missions: activeMissions),
+          WeeklyMissionsTabView(missions: activeMissions, callback: increasePoints),
           const SizedBox(height: 10)
         ],
       )

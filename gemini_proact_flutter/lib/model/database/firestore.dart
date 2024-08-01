@@ -150,6 +150,13 @@ Future<MissionEntity?> getMissionEntityById(String id, {int depth = 0}) async {
   }
 }
 
+// List<MissionEntity> getMissionSteps (MissionEntity mission) {
+  
+//   for (int i = 0; i < mission.stepIds.length; i++) {
+//     String id = mission.stepIds[i];
+
+//   }
+// }
 
 // Get and return an user's currently active projects given 'depth' and 'type'
 // depth = 0 includes only the projects, depth = 1 also includes its missions, depth 2 and onward include mission steps and their child steps

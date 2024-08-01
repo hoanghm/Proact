@@ -70,7 +70,7 @@ class MissionPageState extends State<MissionPage> {
         title: Text(
           widget.mission.title,
           style: GoogleFonts.spaceGrotesk(
-            fontSize: 24
+
           )
         )
       ),
@@ -89,6 +89,26 @@ class MissionPageState extends State<MissionPage> {
               onStepChange: updateStepsCompleted,
             ),
             const Padding(padding: EdgeInsets.only(top: 10)),
+            Container(
+              margin: const EdgeInsets.all(25),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  disabledBackgroundColor: Colors.grey,
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white
+                ),
+                
+                onPressed: currStep < totalSteps ? null : () {
+                  Navigator.pop(context, rewardAmount);
+                },
+                child: Text(
+                  "Submit",
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 20
+                  ),
+                ),
+              ),
+            )
             // Container(
             //   margin: const EdgeInsets.symmetric(horizontal: 20),
             //   child: Column(
