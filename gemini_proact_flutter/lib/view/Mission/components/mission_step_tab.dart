@@ -3,9 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 class MissionStepTab extends StatefulWidget {
   final String stepDescription;
+  final String stepId;
   final bool initCheckState;
-  final void Function(bool) onCheckboxPress;
-  const MissionStepTab({super.key, required this.stepDescription, required this.initCheckState, required this.onCheckboxPress});
+  final int index;
+  final void Function(bool, String, int) onCheckboxPress;
+  const MissionStepTab({super.key, required this.stepDescription, required this.initCheckState, required this.index, required this.onCheckboxPress, required this.stepId});
   
   @override
   MissionStepTabState createState() {
@@ -52,7 +54,7 @@ class MissionStepTabState extends State<MissionStepTab> {
                 setState(() {
                   isChecked = value!;
                 });
-                widget.onCheckboxPress(value!);
+                widget.onCheckboxPress(value!, widget.stepId, widget.index);
               },
             ),
           ),

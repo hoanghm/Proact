@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/mission_page.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,8 +10,11 @@ final logger = Logger((MissionTab).toString());
 class MissionTab extends StatefulWidget {
   final MissionEntity mission;  
   final int index;
-    final void Function(int) callback;
-  const MissionTab({super.key, required this.mission, required this.index, required this.callback});
+  final int ecoPoints;
+  final int level;
+  final void Function(int) stepCallback;
+  final void Function(Map<String, dynamic>) callback;
+  const MissionTab({super.key, required this.mission, required this.index, required this.callback, required this.stepCallback, required this.ecoPoints, required this.level});
 
   @override
   MissionTabState createState() {
@@ -26,7 +31,7 @@ class MissionTabState extends State<MissionTab> {
         onPressed: () async {
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => MissionPage(mission: widget.mission)) 
+            MaterialPageRoute(builder: (context) => MissionPage(mission: widget.mission, ecoPoints: widget.ecoPoints, level: widget.level, stepCallback: widget.stepCallback)) 
           );
           if (result == null) {
             return;
@@ -75,7 +80,7 @@ class MissionTabState extends State<MissionTab> {
                           )
                         ),
                         TextSpan(
-                          text: ' ${widget.mission.CO2InKg}',
+                          text: ' ${widget.mission.ecoPoints}',
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 18

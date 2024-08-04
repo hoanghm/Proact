@@ -5,6 +5,7 @@ import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gemini_proact_flutter/view/root.dart';
 import 'package:logging/logging.dart' show Logger;
 
 final logger = Logger('firestore');
@@ -133,7 +134,7 @@ Future<MissionEntity?> getMissionEntityById(String id, {int depth = 0}) async {
           // First retrieve the step objects
           mission.steps = await getMissionEntitiesByIds(mission.stepIds, depth: depth-1);
         }
-        logger.info("Mission $id retrieved successfully.");
+        // logger.info("Mission $id retrieved successfully.");
         return mission;
       } 
       logger.severe('Error converting mission $id as an object. doc.data() returned "null"');
@@ -150,13 +151,59 @@ Future<MissionEntity?> getMissionEntityById(String id, {int depth = 0}) async {
   }
 }
 
-// List<MissionEntity> getMissionSteps (MissionEntity mission) {
-  
-//   for (int i = 0; i < mission.stepIds.length; i++) {
-//     String id = mission.stepIds[i];
+Future<void> setStepStatusById (String missionId, bool status) async {
+  String newStatus = status ? "done" : "not started";
+  missionsRef
+    .doc(missionId)
+    .update({'status': newStatus});
+}
 
-//   }
-// }
+Future<void> completeMissionById (String missionId) async {
+  missionsRef
+    .doc(missionId)
+    .update({'status': 'done'});
+}
+
+Future<int> getUserWeeklyEcoPoints (ProactUser? user) async {
+  user = user ?? await getUser();
+  if (user == null) {
+    logger.warning('cannot fetch missions for missing user');
+    return 0;
+  }
+
+  await fetchAllUserProjects(user: user, depth: 2);
+  List<String> weeklyProjectIds = user.projects!.where((project) {
+    return 
+    project.type == MissionPeriodType.weekly
+    ;
+  }).map((project) => project.id).toList();
+  
+  // Now fetch the details of those projects and return
+  await getMissionEntitiesByIds(weeklyProjectIds, depth: 2);
+
+  if (user.projects == null || user.projects!.isEmpty) {
+    return 0;
+  }
+
+  int sum = 0;
+  for (int i = 0; i < user.projects!.length; i++) {
+    MissionEntity mission = user.projects![i];
+    if (mission.type != MissionPeriodType.weekly) {
+      continue;
+    }
+    
+    List<MissionEntity> userMissions = mission.steps;
+    
+    for (int j = 0; j < userMissions.length; j++) {
+      MissionEntity stepMission = userMissions[j];
+      if (stepMission.status == MissionStatus.done) {
+        sum += stepMission.ecoPoints;
+      }
+    }
+  }
+
+  return sum;
+}
 
 // Get and return an user's currently active projects given 'depth' and 'type'
 // depth = 0 includes only the projects, depth = 1 also includes its missions, depth 2 and onward include mission steps and their child steps

@@ -7,8 +7,11 @@ import 'package:logging/logging.dart' show Logger;
 final logger = Logger((WeeklyMissionsTabView).toString());
 class WeeklyMissionsTabView extends StatefulWidget {
   final List<MissionEntity> missions;
-  final void Function(int) callback;
-  const WeeklyMissionsTabView({super.key, required this.missions, required this.callback});
+  final void Function(Map<String, dynamic>) callback;
+  final void Function(int) stepCallback;
+  final int ecoPoints;
+  final int level;
+  const WeeklyMissionsTabView({super.key, required this.missions, required this.callback, required this.stepCallback, required this.ecoPoints, required this.level});
 
   @override 
   WeeklyMissionsTabViewState createState() {
@@ -31,7 +34,10 @@ class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
           MissionTab(
             mission: widget.missions[i].steps[j],
             index: index,
-            callback: widget.callback
+            callback: widget.callback,
+            ecoPoints: widget.ecoPoints,
+            level: widget.level,
+            stepCallback: widget.stepCallback
           )
         );
         temp.add(const Padding(padding: EdgeInsets.only(top: 20)));
