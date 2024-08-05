@@ -1,91 +1,85 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/home_card_label.dart';
 
-class HomeCard extends StatefulWidget {
-  const HomeCard({super.key});
+class HomeCard extends StatelessWidget {
+  const HomeCard({Key? key}) : super(key: key);
 
   @override
-  HomeCardState createState() {
-    return HomeCardState();
-  }
-}
-
-class HomeCardState extends State<HomeCard> {
-  @override
-  Widget build (BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 25, right: 25),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade400,
-        borderRadius: BorderRadius.circular(15)
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: _buildProgressCircle(),
+            ),
+            Expanded(
+              flex: 4,
+              child: _buildInfoColumn(),
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Column(
-            children: <Widget>[
-              SizedBox(
-                width: 180,
-                height: 180,
-                child: Stack(
-                  children: <Widget>[
-                    const Center(
-                      child: SizedBox(
-                        width: 140,
-                        height: 140,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 10,
-                          value: 0.75,
-                          color: Colors.green,
-                          backgroundColor: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          RichText(
-                            text: const TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'CO',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 36
-                                  )
-                                ),
-                                TextSpan(
-                                  text: '2',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 36,
-                                    fontFeatures: [FontFeature.subscripts()]
-                                  )
-                                )
-                              ]
-                            ),
-                          ),
-                          const Icon(Icons.arrow_upward, size: 38, color: Colors.green)
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    );
+  }
+
+  Widget _buildProgressCircle() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 140,
+          height: 140,
+          child: CircularProgressIndicator(
+            strokeWidth: 12,
+            value: 0.75,
+            backgroundColor: Colors.grey.shade200,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
           ),
-          const Column(
-            children: [
-              HomeCardLabel(label: "50 Metric"),
-              Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: "Recruit"),
-              Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: "Title"),
-            ],
-          )
-        ],
-      )
+        ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.roboto(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                children: const [
+                  TextSpan(text: 'CO'),
+                  TextSpan(
+                    text: '2',
+                    style: TextStyle(fontFeatures: [FontFeature.subscripts()]),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_upward, size: 32, color: Colors.green.shade600),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoColumn() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        HomeCardLabel(label: "50 Metric"),
+        SizedBox(height: 12),
+        HomeCardLabel(label: "Recruit"),
+        SizedBox(height: 12),
+        HomeCardLabel(label: "Title"),
+      ],
     );
   }
 }

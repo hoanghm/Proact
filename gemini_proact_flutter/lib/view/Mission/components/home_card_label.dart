@@ -1,31 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class HomeCardLabel extends StatefulWidget {
+class HomeCardLabel extends StatelessWidget {
   final String label;
-  const HomeCardLabel({super.key, required this.label});
-  @override
-  HomeCardLabelState createState() {
-    return HomeCardLabelState();
-  }
-}
+  const HomeCardLabel({Key? key, required this.label}) : super(key: key);
 
-class HomeCardLabelState extends State<HomeCardLabel> {
   @override
-  Widget build (BuildContext context) {
+  Widget build(BuildContext context) {
     return Container(
-      width: 135,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.yellow,
-        borderRadius: BorderRadius.circular(20)
+        color: Colors.yellow.shade100,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.yellow.shade600, width: 1),
       ),
       child: Text(
-        widget.label,
-        textAlign: TextAlign.center,
+        label,
         style: GoogleFonts.spaceGrotesk(
-          fontSize: 22
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
         ),
-      )
+      ),
     );
   }
 }

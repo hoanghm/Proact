@@ -3,78 +3,93 @@ import 'package:gemini_proact_flutter/view/Mission/components/mission_tab.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
 
-class WeeklyMissionsTabView extends StatefulWidget {
+class WeeklyMissionsTabView extends StatelessWidget {
   final List<MissionEntity> missions;
-  const WeeklyMissionsTabView({super.key, required this.missions});
+  const WeeklyMissionsTabView({Key? key, required this.missions}) : super(key: key);
 
-  @override 
-  WeeklyMissionsTabViewState createState() {
-    return WeeklyMissionsTabViewState();
-  }
-}
-
-class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
-  final int day = DateTime.now().weekday;
-  
   @override
-  Widget build (BuildContext context) {
-    return Expanded(
-      flex: 1,
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.only(left: 25),
-                padding: const EdgeInsets.only(left: 25, right: 25), 
-                decoration: const BoxDecoration(
-                  color: Colors.yellow
-                ),
-                child: Text(
-                  "Weekly",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 24
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: Container(
-                  width: double.infinity,
-                  color: Colors.yellow,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        const Padding(padding: EdgeInsets.only(top: 20)),
-                        FractionallySizedBox(
-                          widthFactor: 0.8,
-                          child: LinearProgressIndicator(
-                            minHeight: 30,
-                            value: day / 7,
-                            backgroundColor: Colors.grey.shade300,
-                          ),
-                        ),
-                        const Padding(padding: EdgeInsets.only(top: 20)),
-                        for (int i = 0; i < widget.missions.length; i++) 
-                          MissionTab(
-                            mission: widget.missions[i],
-                            index: i + 1,
-                          ),
-                          const Padding(padding: EdgeInsets.only(top: 20))                    
-                      ],
-                    ),
-                  ),
+  Widget build(BuildContext context) {
+    final int day = DateTime.now().weekday;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: _buildHeader("Weekly"),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Week Progress",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(height: 20)
-          ],
-        )
+              const SizedBox(height: 8),
+              _buildProgressBar(day),
+              const SizedBox(height: 16),
+              Text(
+                "Missions",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildMissionsList(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.yellow.shade100,
+        borderRadius: BorderRadius.circular(20),
       ),
+      child: Text(
+        text,
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(int day) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: LinearProgressIndicator(
+        minHeight: 20,
+        value: day / 7,
+        backgroundColor: Colors.grey.shade200,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade400),
+      ),
+    );
+  }
+
+  Widget _buildMissionsList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: missions.length,
+      itemBuilder: (context, index) {
+        return MissionTab(
+          mission: missions[index],
+          index: index + 1,
+        );
+      },
     );
   }
 }

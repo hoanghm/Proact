@@ -9,93 +9,64 @@ class MissionTab extends StatefulWidget {
   const MissionTab({super.key, required this.mission, required this.index});
 
   @override
-  MissionTabState createState() {
-    return MissionTabState();
-  }
+  MissionTabState createState() => MissionTabState();
 }
 
 class MissionTabState extends State<MissionTab> with AutomaticKeepAliveClientMixin<MissionTab> {
   @override
-  Widget build (BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 25),
-      child: TextButton(
-        onPressed: () {
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => MissionPage(mission: widget.mission)) 
           );
         },
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.only(bottom: 15),
-          backgroundColor: Colors.grey.shade300, 
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.zero)
-          )
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: const BoxDecoration(
-                    color: Colors.lightGreen,
-                  ),
-                  child: Text(
-                    'Mission ${widget.index}',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: const BoxDecoration(
-                    color: Colors.lightGreen,
-                  ),
-                  child: RichText(
-                    text: TextSpan(
-                      children: [
-                        const TextSpan(
-                          text: 'CO',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18
-                          )
-                        ),
-                        const TextSpan(
-                          text: '2',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontFeatures: [FontFeature.subscripts()]
-                          )
-                        ),
-                        TextSpan(
-                          text: ' ${widget.mission.CO2InKg}',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18
-                          )
-                        )
-                      ]
-                    ),
-                  ),
-                )
-              ],
-            ),
-            Container(
-              margin: const EdgeInsets.only(left: 10, right: 10, top: 10),
-              child: Text(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildTag('Mission ${widget.index}', Colors.lightGreen),
+                  _buildTag('CO₂ ${widget.mission.CO2InKg}', Colors.lightGreen),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
                 widget.mission.title,
                 style: GoogleFonts.spaceGrotesk(
-                  fontSize: 20 
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
                 ),
-              )
-            ),
-          ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
         ),
       ),
     );
