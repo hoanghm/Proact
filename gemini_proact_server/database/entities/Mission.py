@@ -53,7 +53,7 @@ class BaseMission(DatabaseEntity):
     description: str = field(default="", repr=False)
     steps: List['BaseMission'] = field(factory=list, repr=False)
     status: Type[MissionStatus] = field(default=MissionStatus.NOT_STARTED, repr=False)
-    deadline: Union[str, None] = field(default=None, repr=False)
+    deadline: Union[datetime, None] = field(default=None, repr=False)
     styleId: Union[str, None] = field(default=None, repr=False)
     ecoPoints: int = field(default=0, repr=False)
     CO2InKg: int = field(default=0, repr=False) 

@@ -4,6 +4,7 @@ import json
 import time
 import logging.config
 from tenacity import retry, wait_fixed, stop_after_attempt
+from datetime import datetime, timedelta
 
 from attrs import define, field, NOTHING
 from typing import List, Callable, Union, Dict, Literal
@@ -131,7 +132,8 @@ class GeminiClient:
             self, 
             missions_str: List[str], # list of projects
             project_title: str,
-            project_desc: str = ""
+            project_desc: str = "",
+            deadline: datetime = None
         ) -> WeeklyProject:
         '''Parse missions from gemini response.
 
@@ -143,7 +145,8 @@ class GeminiClient:
         # first create empty project without missions
         project = WeeklyProject(
             title = project_title,
-            description = project_desc
+            description = project_desc,
+            deadline = deadline
         )
 
         # Create each mission
@@ -151,7 +154,8 @@ class GeminiClient:
         for raw_mission in raw_missions:
             mission = WeeklyMission(
                 title = raw_mission['title'],
-                description = raw_mission['description']
+                description = raw_mission['description'],
+                deadline = deadline
             )
             # Get mission ecopoint
             mission.ecoPoints = self._evaluate_mission_ecopoint(
@@ -250,9 +254,12 @@ class GeminiClient:
             
             # missions parsing check
             try:
+                week_of_the_year = self._get_current_week_of_the_year()
+                end_of_week = self._get_end_of_week_datetime()
                 project = self._parse_weekly_project(
                     missions_str=missions_str,
-                    project_title="Weekly project"
+                    project_title=f"Weekly project {week_of_the_year}",
+                    deadline = end_of_week 
                 )
                 valid_project_generated = True
             
@@ -356,6 +363,17 @@ class GeminiClient:
 
         return response_text
 
+
+    def _get_current_week_of_the_year(self) -> int:
+        now = datetime.now()
+        return now.isocalendar().week
+
+
+    def _get_end_of_week_datetime(self) -> datetime:
+        now = datetime.now()
+        end_of_sunday = now + timedelta(days = 6 - now.weekday()) # 0 is Monday, 6 is Friday
+        end_of_sunday = end_of_sunday.replace(hour=23, minute=59, second=0, microsecond=0)
+        return end_of_sunday
 
 
     def _generate_ongoing_project():
@@ -503,7 +521,7 @@ if __name__ == "__main__":
 
     # Try get new ongoing missions
     project = client.generate_weekly_project(
-        user_id="IFXLaAIczXW3hvYansv1DXrH7iH2",
+        user_id="ED0wLoYYm4Ur1atUGeKvGUVDYd83",
         num_missions=3,
         debug=False
     )

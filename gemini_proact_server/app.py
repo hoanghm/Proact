@@ -2,6 +2,7 @@ import os
 import logging
 import base64
 from dotenv import load_dotenv
+from functools import wraps
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -36,6 +37,22 @@ logger = logging.getLogger("proact.flask")
 set_global_logging_level(logging.INFO)
 
 
+def authentication_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('Authorization')
+
+        if api_key is None:
+            return jsonify({"message": "API Key required."}), 401
+
+        if api_key != os.getenv("FLASK_SECRET_KEY"):
+            return jsonify({"message": "Invalid API Key provided."}), 401
+
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
 # Routes
 @app.route('/submit_prompt/', methods=['POST'])
 def submit_prompt():
@@ -45,13 +62,14 @@ def submit_prompt():
 
 
 @app.route('/generate_weekly_project/<user_id>', methods=['GET'])
+@authentication_required
 def get_weekly_missions(user_id):
-    new_missions:List[Dict] 
-    new_missions = gemini_client.generate_weekly_project(
+    weekly_project = gemini_client.generate_weekly_project(
         user_id=user_id
     )
     response = {
-        'new_missions': new_missions
+        'status': 'success',
+        'project_id': weekly_project.id
     }
     return jsonify(response)
 
