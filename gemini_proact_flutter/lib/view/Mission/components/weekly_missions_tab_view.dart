@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_tab.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
+import 'package:logging/logging.dart' show Logger;
 
+final logger = Logger((WeeklyMissionsTabView).toString());
 class WeeklyMissionsTabView extends StatefulWidget {
   final List<MissionEntity> missions;
-  const WeeklyMissionsTabView({super.key, required this.missions});
+  final void Function(Map<String, dynamic>) callback;
+  final void Function(int) stepCallback;
+  final int ecoPoints;
+  final int level;
+  const WeeklyMissionsTabView({super.key, required this.missions, required this.callback, required this.stepCallback, required this.ecoPoints, required this.level});
 
   @override 
   WeeklyMissionsTabViewState createState() {
@@ -15,9 +21,36 @@ class WeeklyMissionsTabView extends StatefulWidget {
 
 class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
   final int day = DateTime.now().weekday;
-  
+  @override
+  void initState() {
+    super.initState();
+  }
+  List<Widget> getWeeklyMissions() {
+    int index = 1;
+    List<Widget> temp = [];
+    for (int i = 0; i < widget.missions.length; i++) {
+      for (int j = 0; j < widget.missions[i].steps.length; j++) {
+        temp.add(
+          MissionTab(
+            mission: widget.missions[i].steps[j],
+            index: index,
+            callback: widget.callback,
+            ecoPoints: widget.ecoPoints,
+            level: widget.level,
+            stepCallback: widget.stepCallback
+          )
+        );
+        temp.add(const Padding(padding: EdgeInsets.only(top: 20)));
+        index++;
+      }
+    }
+
+    return temp;
+  }
   @override
   Widget build (BuildContext context) {
+    List<Widget> weeklyMissions = getWeeklyMissions();
+
     return Expanded(
       flex: 1,
       child: SingleChildScrollView(
@@ -59,12 +92,7 @@ class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
                           ),
                         ),
                         const Padding(padding: EdgeInsets.only(top: 20)),
-                        for (int i = 0; i < widget.missions.length; i++) 
-                          MissionTab(
-                            mission: widget.missions[i],
-                            index: i + 1,
-                          ),
-                          const Padding(padding: EdgeInsets.only(top: 20))                    
+                        ...weeklyMissions                
                       ],
                     ),
                   ),

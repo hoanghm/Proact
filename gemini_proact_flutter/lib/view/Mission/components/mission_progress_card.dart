@@ -70,18 +70,10 @@ class MissionProgressCardState extends State<MissionProgressCard> {
                       text: const TextSpan(
                         children: [
                           TextSpan(
-                            text: 'CO',
+                            text: 'ECO',
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: 24
-                            )
-                          ),
-                          TextSpan(
-                            text: '2',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 24,
-                              fontFeatures: [FontFeature.subscripts()]
                             )
                           )
                         ]

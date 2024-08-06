@@ -1,12 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/mission_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
+import 'package:logging/logging.dart' show Logger;
 
+final logger = Logger((MissionTab).toString());
 class MissionTab extends StatefulWidget {
   final MissionEntity mission;  
   final int index;
-  const MissionTab({super.key, required this.mission, required this.index});
+  final int ecoPoints;
+  final int level;
+  final void Function(int) stepCallback;
+  final void Function(Map<String, dynamic>) callback;
+  const MissionTab({super.key, required this.mission, required this.index, required this.callback, required this.stepCallback, required this.ecoPoints, required this.level});
 
   @override
   MissionTabState createState() {
@@ -14,17 +22,23 @@ class MissionTab extends StatefulWidget {
   }
 }
 
-class MissionTabState extends State<MissionTab> with AutomaticKeepAliveClientMixin<MissionTab> {
+class MissionTabState extends State<MissionTab> {
   @override
   Widget build (BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: TextButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => MissionPage(mission: widget.mission)) 
+            MaterialPageRoute(builder: (context) => MissionPage(mission: widget.mission, ecoPoints: widget.ecoPoints, level: widget.level, stepCallback: widget.stepCallback)) 
           );
+          if (result == null) {
+            return;
+          }
+
+          // Add points on successful mission completion
+          widget.callback(result);
         },
         style: TextButton.styleFrom(
           padding: const EdgeInsets.only(bottom: 15),
@@ -59,22 +73,14 @@ class MissionTabState extends State<MissionTab> with AutomaticKeepAliveClientMix
                     text: TextSpan(
                       children: [
                         const TextSpan(
-                          text: 'CO',
+                          text: 'ECO',
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 18
                           )
                         ),
-                        const TextSpan(
-                          text: '2',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontFeatures: [FontFeature.subscripts()]
-                          )
-                        ),
                         TextSpan(
-                          text: ' ${widget.mission.CO2InKg}',
+                          text: ' ${widget.mission.ecoPoints}',
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 18
@@ -100,7 +106,4 @@ class MissionTabState extends State<MissionTab> with AutomaticKeepAliveClientMix
       ),
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

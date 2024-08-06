@@ -1,14 +1,16 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_progress_card.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_step_view.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity, MissionStatus;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show setStepStatusById;
 
 class MissionPage extends StatefulWidget {
   final MissionEntity mission;
-  const MissionPage({super.key, required this.mission});
+  final int ecoPoints;
+  final int level;
+  final void Function(int) stepCallback;
+  const MissionPage({super.key, required this.mission, required this.ecoPoints, required this.level, required this.stepCallback});
   @override
   MissionPageState createState() {
     return MissionPageState();
@@ -36,6 +38,11 @@ class MissionPageState extends State<MissionPage> {
     if (value > totalSteps) {
       value = totalSteps;
     }
+    
+    bool completedMission = value >= totalSteps;
+    int newRewardAmount = completedMission ? rewardAmount : -rewardAmount;
+    widget.stepCallback(newRewardAmount);
+    setStepStatusById(widget.mission.id, completedMission);
 
     setState(() {
       currStep = value;
@@ -70,9 +77,14 @@ class MissionPageState extends State<MissionPage> {
         title: Text(
           widget.mission.title,
           style: GoogleFonts.spaceGrotesk(
-            fontSize: 24
           )
-        )
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => {
+            Navigator.of(context).pop()
+          },
+        ), 
       ),
       body: SafeArea(
         child: Column(
@@ -89,6 +101,31 @@ class MissionPageState extends State<MissionPage> {
               onStepChange: updateStepsCompleted,
             ),
             const Padding(padding: EdgeInsets.only(top: 10)),
+            // Container(
+            //   margin: const EdgeInsets.all(25),
+            //   child: ElevatedButton(
+            //     style: ElevatedButton.styleFrom(
+            //       disabledBackgroundColor: Colors.grey,
+            //       backgroundColor: Colors.green,
+            //       foregroundColor: Colors.white
+            //     ),
+                
+            //     onPressed: currStep < totalSteps ? null : () {
+            //       Navigator.pop(context, 
+            //         {
+            //           "rewardAmount": rewardAmount,
+            //           "missionId": widget.mission.id
+            //         }
+            //       );
+            //     },
+            //     child: Text(
+            //       "Submit",
+            //       style: GoogleFonts.spaceGrotesk(
+            //         fontSize: 20
+            //       ),
+            //     ),
+            //   ),
+            // )
             // Container(
             //   margin: const EdgeInsets.symmetric(horizontal: 20),
             //   child: Column(

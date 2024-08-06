@@ -1,5 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum MissionLevel {
+  mission('mission'),
+  step('step');
+
+  final String name;
+
+  const MissionLevel(this.name);
+
+  static MissionLevel? fromString(String? name) {
+    if (name == null) {
+      return null;
+    }
+
+    for (var value in MissionLevel.values) {
+      if (value.name == name) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  String toString() {
+    return name;
+  }
+}
+
 enum MissionPeriodType {
   weekly('weekly'),
   ongoing('ongoing'),
@@ -67,6 +95,7 @@ class MissionEntity {
   List<String> stepIds;
   MissionPeriodType? type;
   MissionStatus status;
+  MissionLevel level;
   String? description;
   DateTime? deadline;
   String? styleId;
@@ -84,6 +113,7 @@ class MissionEntity {
     required this.steps,
     required this.type,
     required this.status,
+    required this.level,
     this.description,
     this.deadline,
     this.styleId,
@@ -110,6 +140,10 @@ class MissionEntity {
         (e) => e.toString() == data['status'],
         orElse: () => MissionStatus.notStarted,
         ),
+      level: MissionLevel.values.firstWhere(
+        (e) => e.toString() == data['level'],
+        orElse: () => MissionLevel.step,
+        ),
       description: data['description'],
       deadline: data['deadline'] != null ? (data['deadline'] as Timestamp).toDate() : null,
       styleId: data['styleId'],
@@ -128,6 +162,7 @@ class MissionEntity {
       'steps': stepIds,
       'type': type.toString(),
       'status': status.toString(),
+      'level' : level.toString(),
       'description': description,
       'deadline': deadline != null ? Timestamp.fromDate(deadline!) : null,
       'styleId': styleId,

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/home_card_label.dart';
 
 class HomeCard extends StatefulWidget {
-  const HomeCard({super.key});
+  final int currentEcoPoints;
+  final int currentLevel;
+  const HomeCard({super.key, required this.currentEcoPoints, required this.currentLevel});
 
   @override
   HomeCardState createState() {
@@ -12,6 +13,18 @@ class HomeCard extends StatefulWidget {
 }
 
 class HomeCardState extends State<HomeCard> {
+  void setPlayerStatistics() async {
+
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setPlayerStatistics();
+    });
+  }
+
   @override
   Widget build (BuildContext context) {
     return Container(
@@ -21,6 +34,7 @@ class HomeCardState extends State<HomeCard> {
         borderRadius: BorderRadius.circular(15)
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Column(
             children: <Widget>[
@@ -29,13 +43,13 @@ class HomeCardState extends State<HomeCard> {
                 height: 180,
                 child: Stack(
                   children: <Widget>[
-                    const Center(
+                    Center(
                       child: SizedBox(
                         width: 140,
                         height: 140,
                         child: CircularProgressIndicator(
                           strokeWidth: 10,
-                          value: 0.75,
+                          value: (widget.currentEcoPoints % 100) / 100,
                           color: Colors.green,
                           backgroundColor: Colors.grey,
                         ),
@@ -49,24 +63,16 @@ class HomeCardState extends State<HomeCard> {
                             text: const TextSpan(
                               children: [
                                 TextSpan(
-                                  text: 'CO',
+                                  text: 'ECO',
                                   style: TextStyle(
                                     color: Colors.black,
                                     fontSize: 36
-                                  )
-                                ),
-                                TextSpan(
-                                  text: '2',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 36,
-                                    fontFeatures: [FontFeature.subscripts()]
                                   )
                                 )
                               ]
                             ),
                           ),
-                          const Icon(Icons.arrow_upward, size: 38, color: Colors.green)
+                          // const Icon(Icons.arrow_upward, size: 38, color: Colors.green)
                         ],
                       ),
                     ),
@@ -75,13 +81,10 @@ class HomeCardState extends State<HomeCard> {
               ),
             ],
           ),
-          const Column(
+          Column(
             children: [
-              HomeCardLabel(label: "50 Metric"),
-              Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: "Recruit"),
-              Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: "Title"),
+              const Padding(padding: EdgeInsets.only(top: 15)),
+              HomeCardLabel(label: 'Level ${widget.currentLevel}'),
             ],
           )
         ],
