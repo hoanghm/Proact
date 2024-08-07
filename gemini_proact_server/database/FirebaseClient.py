@@ -72,6 +72,23 @@ class FirebaseClient:
         user = User.from_dict(user_data)
         self.logger.info(f"Successfully retrieved {user}")
         return user
+    
+
+    def user_has_existing_weekly_project(self, user_id):
+        '''
+        Given an user_id, returns `True` if an acive weekly project exists and `False` otherwise. Return None if user doesn't exist.
+        '''
+        try:
+            user = self.get_user_by_id(user_id)
+        except ValueError as e:
+            return None
+        active_weekly_project_exists = False
+        for project_id in user.project_ids:
+            project = self.get_mission_entity_by_id(project_id)
+            if project.status == MissionStatus.IN_PROGRESS:
+                active_weekly_project_exists = True
+                break
+        return active_weekly_project_exists
 
 
     def get_mission_entity_by_id(
@@ -175,6 +192,8 @@ if __name__ == "__main__":
     set_global_logging_level(logging.INFO)
 
     fb_client = FirebaseClient()
-    user = fb_client.get_user_by_id("IFXLaAIczXW3hvYansv1DXrH7iH2")
-    projects = fb_client.fetch_user_projects(user)
+    # user = fb_client.get_user_by_id("IFXLaAIczXW3hvYansv1DXrH7iH2")
+    # projects = fb_client.fetch_user_projects(user)
+    user_id = "ED0wLoYYm4Ur1atUGeKvGUVDYd83"
+    result = fb_client.user_has_existing_weekly_project(user_id)
     breakpoint()

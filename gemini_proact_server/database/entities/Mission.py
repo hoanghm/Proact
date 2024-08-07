@@ -4,6 +4,7 @@ from enum import Enum
 from datetime import datetime
 import math
 from datetime import datetime
+from copy import deepcopy
 
 import attrs
 from attrs import define, field, NOTHING
@@ -22,7 +23,6 @@ class DefaultValues():
 
 
 class MissionStatus(Enum):
-    NOT_STARTED = 'not started'
     IN_PROGRESS = 'in progress'
     DONE = 'done'
     EXPIRED = 'expired'
@@ -52,7 +52,7 @@ class BaseMission(DatabaseEntity):
     type: Type[MissionPeriodType] = field(default=None  )
     description: str = field(default="", repr=False)
     steps: List['BaseMission'] = field(factory=list, repr=False)
-    status: Type[MissionStatus] = field(default=MissionStatus.NOT_STARTED, repr=False)
+    status: Type[MissionStatus] = field(default=MissionStatus.IN_PROGRESS, repr=False)
     deadline: Union[datetime, None] = field(default=None, repr=False)
     styleId: Union[str, None] = field(default=None, repr=False)
     ecoPoints: int = field(default=0, repr=False)
@@ -63,6 +63,20 @@ class BaseMission(DatabaseEntity):
 
     @classmethod
     def from_dict(cls, data: dict) -> 'BaseMission':
+        # Parse some strings to Enums
+        data = deepcopy(data)
+        if data.get('status') is not None and isinstance(data['status'], str):
+            try:
+                data['status'] = MissionStatus._value2member_map_[data['status']]
+            except KeyError as e:
+                logger.error(f"MissionEntity status '{data['status']}' cannot be parsed.")
+                raise KeyError(e)
+        if data.get('type') is not None and isinstance(data['type'], str):
+            try:
+                data['type'] = MissionPeriodType._value2member_map_[data['type']]
+            except KeyError as e:
+                logger.error(f"MissionEntity type '{data['type']}' cannot be parsed.")
+                raise KeyError(e)
         return cls(
             **data
         )
@@ -182,7 +196,7 @@ def create_mission_entity_from_dict(d: Dict) -> BaseMission:
     else:
         raise ValueError(ValueError(f"'level' is expected to be in {[t.value for t in MissionLevel]}. Got {d['level']} instead"))
 
-    return mission_entity_class(**d)
+    return mission_entity_class.from_dict(d)
 
 
 # test driver

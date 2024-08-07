@@ -64,13 +64,20 @@ def submit_prompt():
 @app.route('/generate_weekly_project/<user_id>', methods=['GET'])
 @authentication_required
 def get_weekly_missions(user_id):
-    weekly_project = gemini_client.generate_weekly_project(
-        user_id=user_id
-    )
-    response = {
-        'status': 'success',
-        'project_id': weekly_project.id
-    }
+    # first check if an active weekly project already exists
+    if gemini_client.fb_client.user_has_existing_weekly_project(user_id):
+        response = {
+            'status': 'failed',
+            'message': f"User '{user_id}' already has an active weekly project"
+        }
+    else: # generate a new weekly project
+        weekly_project = gemini_client.generate_weekly_project(
+            user_id=user_id
+        )
+        response = {
+            'status': 'success',
+            'project_id': weekly_project.id
+        }
     return jsonify(response)
 
 
