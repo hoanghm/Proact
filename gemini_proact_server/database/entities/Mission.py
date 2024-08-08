@@ -119,21 +119,43 @@ class BaseMission(DatabaseEntity):
         })
         del d['id'] # don't include id since it will be doc id
         return d
-
+    
 
 
 @define(kw_only=True)
-class WeeklyProject(BaseMission):
+class Project(BaseMission):
+    level: Type[MissionLevel] = field(default=MissionLevel.PROJECT, repr=False)
+
+@define(kw_only=True)
+class Mission(BaseMission):
+    level: Type[MissionLevel] = field(default=MissionLevel.MISSION, repr=False)
+
+    def __str__(self):
+        # assemble steps' title as a str
+        step_strs = [step.title for step in self.steps]
+        step_strs = '\n\t\t+ '.join(step_strs)
+        # construct simple str representation
+        mission_str = f'''
+        - Title: {self.title}
+        - Description: {self.description}
+        - Steps: [
+            \t+ {step_strs}
+        ]
+        '''
+        return mission_str
+
+
+@define(kw_only=True)
+class WeeklyProject(Project):
     '''
     A Weekly Project that consists of missions. For now not much different than BaseMission.
     '''
     type: Type[MissionPeriodType] = field(default=MissionPeriodType.WEEKLY, repr=False)
-    level: Type[MissionLevel] = field(default=MissionLevel.PROJECT, repr=False)
     regenerationLeft: int = field(default=-1) # weekly project can't be regenerated
 
 
 @define(kw_only=True)
-class OngoingProject(BaseException):
+class OngoingProject(Project):
     '''
     An Ongoing Project that consists of ongoing missions. For now not much different than BaseMission.
     '''
@@ -143,22 +165,20 @@ class OngoingProject(BaseException):
 
 
 @define(kw_only=True)
-class WeeklyMission(BaseMission):
+class WeeklyMission(Mission):
     '''
     A Mission that consists of steps. For now no different than BaseMission.
     '''
     type: Type[MissionPeriodType] = field(default=MissionPeriodType.WEEKLY, repr=False)
-    level: Type[MissionLevel] = field(default=MissionLevel.MISSION, repr=False)
     regenerationLeft:int = field(default=DefaultValues.WEEKLY_MISSION_REGENERATION_MAX)
 
 
 @define(kw_only=True)
-class OngoingMission(BaseMission):
+class OngoingMission(Mission):
     '''
     A Mission that consists of steps. For now no different than BaseMission.
     '''
     type: Type[MissionPeriodType] = field(default=MissionPeriodType.ONGOING, repr=False)
-    level: Type[MissionLevel] = field(default=MissionLevel.MISSION, repr=False)
     regenerationLeft:int = field(default=-1) # Ongoing missions can't be regenerated
 
 

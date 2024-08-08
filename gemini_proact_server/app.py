@@ -4,7 +4,7 @@ import base64
 from dotenv import load_dotenv
 from functools import wraps
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 
 from utils import init_logging, set_global_logging_level
@@ -78,6 +78,26 @@ def get_weekly_missions(user_id):
             'status': 'success',
             'project_id': weekly_project.id
         }
+    return jsonify(response)
+
+
+@app.route('/regenerate_mission/<user_id>/<project_id>/<mission_id>', methods=['GET'])
+@authentication_required
+def regenerate_mission(user_id, project_id, mission_id):
+    try:
+        updated_mission = gemini_client.regenerate_mission(
+            user_id=user_id,
+            project_id=project_id,
+            mission_id=mission_id
+        )
+    except Exception as e:
+        logger.error(f"Error when regenerating mission: {e}")
+        abort(500)
+
+    response = {
+        'status': 'success',
+        'mission_id': updated_mission.id
+    }
     return jsonify(response)
 
 
