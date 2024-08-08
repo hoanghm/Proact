@@ -92,7 +92,11 @@ def regenerate_mission(user_id, project_id, mission_id):
         )
     except Exception as e:
         logger.error(f"Error when regenerating mission: {e}")
-        abort(500)
+        response = {
+            'status': 'failed',
+            'message': e
+        }
+        return jsonify(response), 500
 
     response = {
         'status': 'success',
