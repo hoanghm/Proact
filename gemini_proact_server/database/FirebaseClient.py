@@ -72,6 +72,23 @@ class FirebaseClient:
         user = User.from_dict(user_data)
         self.logger.info(f"Successfully retrieved {user}")
         return user
+    
+
+    def user_has_existing_weekly_project(self, user_id):
+        '''
+        Given an user_id, returns `True` if an acive weekly project exists and `False` otherwise. Return None if user doesn't exist.
+        '''
+        try:
+            user = self.get_user_by_id(user_id)
+        except ValueError as e:
+            return None
+        active_weekly_project_exists = False
+        for project_id in user.project_ids:
+            project = self.get_mission_entity_by_id(project_id)
+            if project.status == MissionStatus.IN_PROGRESS:
+                active_weekly_project_exists = True
+                break
+        return active_weekly_project_exists
 
 
     def get_mission_entity_by_id(
@@ -143,7 +160,61 @@ class FirebaseClient:
             except TypeError as e:
                 self.logger.error(f"Error when adding mission entity to db. {e}")
         self.logger.info(f"Added mission entity: {mission_entity}") 
+
+
+    def delete_mission_entity_from_db(
+        self,
+        mission_entity:BaseMission,
+        debug:bool=False
+    ):
+        '''
+        Delete a mission entity and its child steps. The parent mission entity if exists will remain unchanged.
+        '''
+        # delete the steps first 
+        for step in mission_entity.steps:
+            self.delete_mission_entity_from_db(
+                mission_entity = step,
+                debug = debug
+            )
+        
+        # base case, no more steps to process --> delete this mission entity itself
+        mission_entity_doc_ref = self.db.collection("Mission").document(mission_entity.id)
+        mission_entity_doc_ref.delete()
+        logger.info(f"Mission Entity {mission_entity.id} deleted from db.")
+
+
+    def replace_mission_of_project(
+        self,
+        project_id: str,
+        old_mission_id: str,
+        new_mission: Mission,
+        debug: bool=False
+    ):
+        project = self.get_mission_entity_by_id(project_id)
+
+        # Delete old mission
+        old_mission = self.get_mission_entity_by_id(old_mission_id)
+        self.delete_mission_entity_from_db(old_mission)
+
+        # Add new mission with the same id
+        new_mission.id = old_mission_id
+        self.add_mission_entity_to_db(new_mission)
+        self.logger.info(f"Mission {old_mission_id} was replaced with a different version.")
+
     
+    def sync_mission_entity_with_db(
+        self,
+        mission_entity: BaseMission,
+        debug: bool=False
+    ):
+        '''
+        Update the content of a single MissionEntity document in the Mission collection (its parent and child steps remain unchanged)
+        '''
+        mission_entity_dict = mission_entity.to_dict()
+        mission_doc_ref = self.db.collection("Mission").document(mission_entity.id)
+        mission_doc_ref.update(mission_entity_dict)
+        self.logger.info(f"Synced mission entity id {mission_entity.id} with db.")
+
 
     def add_project_to_user(
             self, 
@@ -175,6 +246,8 @@ if __name__ == "__main__":
     set_global_logging_level(logging.INFO)
 
     fb_client = FirebaseClient()
-    user = fb_client.get_user_by_id("IFXLaAIczXW3hvYansv1DXrH7iH2")
-    projects = fb_client.fetch_user_projects(user)
+    # user = fb_client.get_user_by_id("IFXLaAIczXW3hvYansv1DXrH7iH2")
+    # projects = fb_client.fetch_user_projects(user)
+    user_id = "ED0wLoYYm4Ur1atUGeKvGUVDYd83"
+    result = fb_client.user_has_existing_weekly_project(user_id)
     breakpoint()
