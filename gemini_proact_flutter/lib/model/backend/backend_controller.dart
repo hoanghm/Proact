@@ -36,3 +36,23 @@ Future<Map<String, dynamic>> generateWeeklyProjects() async {
     return {"status": 'failed', 'project_id': -1};
   }
 }
+
+Future<Map<String, dynamic>> regenerateMission(String missionId, String projectId) async {
+  try {
+    String apiKey = dotenv.env["API_KEY"].toString();
+    final User user = FirebaseAuth.instance.currentUser!;
+    String generateURL = '$backendURL/regenerate_mission/${user.uid}/$projectId/$missionId';
+    final response = await http.get(
+      Uri.parse(generateURL),
+      // Send authorization headers to the backend.
+      headers: {
+        HttpHeaders.authorizationHeader: apiKey,
+      },
+    );
+    String responseData = response.body;
+    Map<String, dynamic> map = json.decode(responseData);
+    return map;
+  } catch (err) {
+    return {"status": 'failed', 'mission_id': -1};
+  }
+}

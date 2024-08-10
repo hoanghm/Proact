@@ -48,6 +48,7 @@ dependencies:
   path: ^1.9.0
   permission_handler: ^11.3.1
   flutter_dotenv: ^5.1.0
+  context_menus: ^2.0.0+1
 
 dev_dependencies:
   flutter_test:

@@ -157,6 +157,11 @@ Future<void> setStepStatusById (String missionId, bool status) async {
     .update({'status': newStatus});
 }
 
+Future<MissionEntity?> getMissionById (String missionId) async {
+  DocumentSnapshot<MissionEntity> missionQuery = await missionsRef.doc(missionId).get();
+  return missionQuery.data();
+}
+
 Future<void> completeMissionById (String missionId) async {
   missionsRef
     .doc(missionId)

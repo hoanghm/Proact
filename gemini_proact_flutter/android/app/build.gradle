@@ -61,7 +61,6 @@ flutter {
 
 // derived from https://stackoverflow.com/a/75298544/10200417 to fix kotlin duplicate class errors on build
 dependencies {
-    classpath 'com.google.gms:google-services:4.3.14',
     constraints {
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
             because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
@@ -71,5 +70,3 @@ dependencies {
         }
     }
 }
-
-apply plugin: 'com.google.gms.google-services'

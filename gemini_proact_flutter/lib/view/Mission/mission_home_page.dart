@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUserActiveProjects, completeMissionById, getUserWeeklyEcoPoints;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUserActiveProjects, completeMissionById, getUserWeeklyEcoPoints, getMissionById;
 import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
 import 'package:gemini_proact_flutter/view/Mission/components/home_card.dart';
@@ -34,6 +34,22 @@ class MissionHomePageState extends State<MissionHomePage> {
       currLevel = ecoPoints ~/ 100 + 1;
     });
   }
+  void refreshMission () async {
+    List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 2);
+    int ecoPoints = await getUserWeeklyEcoPoints(widget.user);
+    if (missions == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+    setState(() {
+      activeMissions = missions;
+      currEcoPoints = ecoPoints;
+      currLevel = ecoPoints ~/ 100 + 1;
+      isLoading = false;
+    });
+  }
   void getUserMissions () async {
     List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 2);
     int ecoPoints = await getUserWeeklyEcoPoints(widget.user);
@@ -43,7 +59,6 @@ class MissionHomePageState extends State<MissionHomePage> {
       });
       return;
     }
-
     setState(() {
       activeMissions = missions;
       currEcoPoints = ecoPoints;
@@ -97,7 +112,7 @@ class MissionHomePageState extends State<MissionHomePage> {
             currentLevel: currLevel
           ),
           const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
-          WeeklyMissionsTabView(missions: activeMissions, callback: onSubmit, stepCallback: updateStatistics, ecoPoints: currEcoPoints, level: currLevel),
+          WeeklyMissionsTabView(missions: activeMissions, callback: onSubmit, stepCallback: updateStatistics, ecoPoints: currEcoPoints, level: currLevel, onRefreshCallback: refreshMission),
           const SizedBox(height: 10)
         ],
       )
