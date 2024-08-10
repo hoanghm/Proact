@@ -4,7 +4,6 @@ import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
 import 'package:gemini_proact_flutter/view/Mission/components/home_card.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/weekly_missions_tab_view.dart';
 import 'package:logging/logging.dart' show Logger;
 
