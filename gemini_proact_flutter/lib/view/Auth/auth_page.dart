@@ -57,10 +57,13 @@ class AuthPageState extends State<AuthPage> {
                     // No active missions -> Need to regenerate missions
                     generateWeeklyProjects().then((result) { 
                       logger.info("Generated new active missions");
-                      Navigator.push(
-                        context, 
-                        MaterialPageRoute(builder: (context) => HomePage(user: possibleUser))
-                      );
+                      // Need to regen user because now the snapshot is updated
+                      getUser().then((userWithMissions) {
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => HomePage(user: userWithMissions))
+                        );
+                      });
                     });
                   } else {
                     // Successful Onboarding + Has Active Missions

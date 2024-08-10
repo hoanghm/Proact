@@ -98,23 +98,25 @@ class MissionHomePageState extends State<MissionHomePage> {
     }
 
     return SafeArea(
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ProactLogo(size: 26)
-            ],
-          ),
-          const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
-          HomeCard(
-            currentEcoPoints: currEcoPoints, 
-            currentLevel: currLevel
-          ),
-          const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
-          WeeklyMissionsTabView(missions: activeMissions, callback: onSubmit, stepCallback: updateStatistics, ecoPoints: currEcoPoints, level: currLevel, onRefreshCallback: refreshMission),
-          const SizedBox(height: 10)
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ProactLogo(size: 26)
+              ],
+            ),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
+            HomeCard(
+              currentEcoPoints: currEcoPoints, 
+              currentLevel: currLevel
+            ),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
+            WeeklyMissionsTabView(missions: activeMissions, callback: onSubmit, stepCallback: updateStatistics, ecoPoints: currEcoPoints, level: currLevel, onRefreshCallback: refreshMission),
+            const SizedBox(height: 10)
+          ],
+        ),
       )
     );
   }
