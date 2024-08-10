@@ -2,8 +2,9 @@ import os
 import logging
 import base64
 from dotenv import load_dotenv
+from functools import wraps
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 
 from utils import init_logging, set_global_logging_level
@@ -36,6 +37,22 @@ logger = logging.getLogger("proact.flask")
 set_global_logging_level(logging.INFO)
 
 
+def authentication_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('Authorization')
+
+        if api_key is None:
+            return jsonify({"message": "API Key required."}), 401
+
+        if api_key != os.getenv("FLASK_SECRET_KEY"):
+            return jsonify({"message": "Invalid API Key provided."}), 401
+
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
 # Routes
 @app.route('/submit_prompt/', methods=['POST'])
 def submit_prompt():
@@ -45,13 +62,45 @@ def submit_prompt():
 
 
 @app.route('/generate_weekly_project/<user_id>', methods=['GET'])
+@authentication_required
 def get_weekly_missions(user_id):
-    new_missions:List[Dict] 
-    new_missions = gemini_client.generate_weekly_project(
-        user=user_id
-    )
+    # first check if an active weekly project already exists
+    if gemini_client.fb_client.user_has_existing_weekly_project(user_id):
+        response = {
+            'status': 'failed',
+            'message': f"User '{user_id}' already has an active weekly project"
+        }
+    else: # generate a new weekly project
+        weekly_project = gemini_client.generate_weekly_project(
+            user_id=user_id
+        )
+        response = {
+            'status': 'success',
+            'project_id': weekly_project.id
+        }
+    return jsonify(response)
+
+
+@app.route('/regenerate_mission/<user_id>/<project_id>/<mission_id>', methods=['GET'])
+@authentication_required
+def regenerate_mission(user_id, project_id, mission_id):
+    try:
+        updated_mission = gemini_client.regenerate_mission(
+            user_id=user_id,
+            project_id=project_id,
+            mission_id=mission_id
+        )
+    except Exception as e:
+        logger.error(f"Error when regenerating mission: {e}")
+        response = {
+            'status': 'failed',
+            'message': e
+        }
+        return jsonify(response), 500
+
     response = {
-        'new_missions': new_missions
+        'status': 'success',
+        'mission_id': updated_mission.id
     }
     return jsonify(response)
 
