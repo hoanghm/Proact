@@ -50,7 +50,7 @@ class MissionStepViewState extends State<MissionStepView> {
                   initCheckState: widget.steps[i].status.name == "done",           
                   onCheckboxPress: onCheckboxPress,   
                 ),
-                const Padding(padding: EdgeInsets.only(top: 10)),  
+              const Padding(padding: EdgeInsets.only(top: 10)),  
             ],
           )
         ),

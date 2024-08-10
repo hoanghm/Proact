@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/view/Mission/components/home_card_label.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeCard extends StatefulWidget {
   final int currentEcoPoints;
@@ -25,70 +25,78 @@ class HomeCardState extends State<HomeCard> {
     });
   }
 
+  Widget _buildProgressCircle() {
+    return Stack(
+      children: [
+        const SizedBox(
+          width: 100,
+          height: 100,
+          child: Center(
+            child: Text(
+              'ECO',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 28
+              )
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 100,
+          height: 100,
+          child: CircularProgressIndicator(
+            strokeWidth: 5,
+            value: (widget.currentEcoPoints % 100) / 100,
+            color: Colors.blue,
+            backgroundColor: Colors.grey,
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildInfoColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildInfoRow(Icons.recycling, 'Level ${widget.currentLevel}'),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 30, color: Colors.blue),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: GoogleFonts.roboto(
+            fontWeight: FontWeight.w500,
+            fontSize: 30,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build (BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 25, right: 25),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade400,
-        borderRadius: BorderRadius.circular(15)
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildProgressCircle(),
+            const SizedBox(width: 20),
+            _buildInfoColumn()
+          ],
+        ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Column(
-            children: <Widget>[
-              SizedBox(
-                width: 180,
-                height: 180,
-                child: Stack(
-                  children: <Widget>[
-                    Center(
-                      child: SizedBox(
-                        width: 140,
-                        height: 140,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 10,
-                          value: (widget.currentEcoPoints % 100) / 100,
-                          color: Colors.green,
-                          backgroundColor: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          RichText(
-                            text: const TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'ECO',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 36
-                                  )
-                                )
-                              ]
-                            ),
-                          ),
-                          // const Icon(Icons.arrow_upward, size: 38, color: Colors.green)
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              const Padding(padding: EdgeInsets.only(top: 15)),
-              HomeCardLabel(label: 'Level ${widget.currentLevel}'),
-            ],
-          )
-        ],
-      )
     );
   }
 }

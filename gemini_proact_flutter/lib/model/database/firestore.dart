@@ -5,7 +5,6 @@ import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gemini_proact_flutter/view/root.dart';
 import 'package:logging/logging.dart' show Logger;
 
 final logger = Logger('firestore');

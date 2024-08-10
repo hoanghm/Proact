@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show signOutUnverifiedAccount, signOutUser;
 import 'package:gemini_proact_flutter/model/backend/backend_controller.dart' show pingTest;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final logger = Logger('main');
 
@@ -27,6 +28,8 @@ void main() async {
   // check if backend server is set up
   String ping = await pingTest();
   logger.info('Backend Status: $ping');
+  // initialize dotenv
+  await dotenv.load(fileName: "lib/.env");
   // initialize Firebase
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(

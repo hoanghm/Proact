@@ -12,7 +12,20 @@
           "package_name": "com.proact"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "650291910582-tuo5bcujdvbmb3cqlfe9957njpp0qc9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.proact",
+            "certificate_hash": "4dd5a377ad5f6bd389acef9337fbacda882b4451"
+          }
+        },
+        {
+          "client_id": "650291910582-4tt6cq2hrmbohn2o91o38ba3hkql5vk0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAzC9IjFnq2VEMbSunGpYk3O-fGy6FwahQ"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "650291910582-4tt6cq2hrmbohn2o91o38ba3hkql5vk0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "650291910582-mnebufn5pnj6cn4vvkltad8jsn1gii79.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.geminiProactFlutter"
+              }
+            }
+          ]
         }
       }
     }

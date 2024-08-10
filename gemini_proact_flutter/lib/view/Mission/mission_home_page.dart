@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUserActiveProjects, completeMissionById, getUserWeeklyEcoPoints;
 import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
@@ -26,6 +24,7 @@ class MissionHomePageState extends State<MissionHomePage> {
   List<MissionEntity> activeMissions = [];
   int currEcoPoints = 0;
   int currLevel = 1;
+  bool isLoading = true;
   void updateStatistics(int points) {
     int ecoPoints = currEcoPoints + points;
     if (ecoPoints < 0) {
@@ -40,6 +39,9 @@ class MissionHomePageState extends State<MissionHomePage> {
     List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 2);
     int ecoPoints = await getUserWeeklyEcoPoints(widget.user);
     if (missions == null) {
+      setState(() {
+        isLoading = false;
+      });
       return;
     }
 
@@ -47,6 +49,7 @@ class MissionHomePageState extends State<MissionHomePage> {
       activeMissions = missions;
       currEcoPoints = ecoPoints;
       currLevel = ecoPoints ~/ 100 + 1;
+      isLoading = false;
     });
   }
   @override
@@ -72,28 +75,21 @@ class MissionHomePageState extends State<MissionHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const SafeArea(
+        child: Center(
+          child: CircularProgressIndicator(),
+        ) 
+      );
+    }
+
     return SafeArea(
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Text(
-                widget.user.username, 
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500
-                )),
-              ProactLogo(size: 22),
-              IconButton(
-                onPressed: () {
-                  // TODO: Add onPressed functionality for whatever this does
-                }, 
-                icon: const Icon(
-                  Icons.menu,
-                  size: 35,
-                )
-              )
+              ProactLogo(size: 26)
             ],
           ),
           const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),

@@ -44,64 +44,74 @@ class WeeklyMissionsTabViewState extends State<WeeklyMissionsTabView> {
         index++;
       }
     }
-
     return temp;
   }
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        'Weekly Missions',
+        style: GoogleFonts.roboto(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue.shade800,
+        ),
+      ),
+    );
+  }
+  Widget _buildProgressBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Progress',
+            style: GoogleFonts.roboto(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: day / 7,
+              minHeight: 10,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade400),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build (BuildContext context) {
     List<Widget> weeklyMissions = getWeeklyMissions();
-
-    return Expanded(
-      flex: 1,
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.only(left: 25),
-                padding: const EdgeInsets.only(left: 25, right: 25), 
-                decoration: const BoxDecoration(
-                  color: Colors.yellow
-                ),
-                child: Text(
-                  "Weekly",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 24
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: Container(
-                  width: double.infinity,
-                  color: Colors.yellow,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        const Padding(padding: EdgeInsets.only(top: 20)),
-                        FractionallySizedBox(
-                          widthFactor: 0.8,
-                          child: LinearProgressIndicator(
-                            minHeight: 30,
-                            value: day / 7,
-                            backgroundColor: Colors.grey.shade300,
-                          ),
-                        ),
-                        const Padding(padding: EdgeInsets.only(top: 20)),
-                        ...weeklyMissions                
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20)
-          ],
-        )
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 24),
+          _buildProgressBar(),
+          const SizedBox(height: 24),
+          ListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              ...weeklyMissions
+            ]
+          )
+        ],
       ),
     );
   }
