@@ -26,11 +26,9 @@ class MissionHomePageState extends State<MissionHomePage> {
   bool isLoading = true;
   void updateStatistics(int points) {
     int ecoPoints = currEcoPoints + points;
-    if (ecoPoints < 0) {
-      ecoPoints = 0;
-    }
+    logger.info(ecoPoints);
     setState(() {
-      currEcoPoints = ecoPoints;
+      currEcoPoints = ecoPoints % 100;
       currLevel = ecoPoints ~/ 100 + 1;
     });
   }
@@ -77,9 +75,10 @@ class MissionHomePageState extends State<MissionHomePage> {
   void onSubmit(Map<String, dynamic> submissionDetails) {
     // Update points
     int rewardAmount = submissionDetails["rewardAmount"];
+    int newValue = currEcoPoints + rewardAmount;
     setState(() {
       currEcoPoints += rewardAmount;
-      currLevel = currEcoPoints ~/ 100;
+      currLevel = newValue ~/ 100 + 1;
     });
 
     // Complete mission on Firebase

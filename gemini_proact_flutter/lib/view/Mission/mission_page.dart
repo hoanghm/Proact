@@ -18,13 +18,17 @@ class MissionPage extends StatefulWidget {
 }
 
 class MissionPageState extends State<MissionPage> {
+  int prevStep = 0;
   int currStep = 0;
   int totalSteps = 1;
   int rewardAmount = 0;
   String stepDescription = "";
 
-  void updateStepsCompleted(bool newState) {
+  void updateStepsCompleted(bool newState, String id) {
     int value = currStep;
+    setState(() {
+      prevStep = currStep;
+    });
     if (newState) {
       value++;
     } else {
@@ -40,9 +44,14 @@ class MissionPageState extends State<MissionPage> {
     }
     
     bool completedMission = value >= totalSteps;
-    int newRewardAmount = completedMission ? rewardAmount : -rewardAmount;
-    widget.stepCallback(newRewardAmount);
-    setStepStatusById(widget.mission.id, completedMission);
+    if (completedMission) {
+      widget.stepCallback(rewardAmount);
+    } else {
+      if (currStep >= totalSteps && value < currStep) {
+        widget.stepCallback(-rewardAmount);
+      }
+    }
+    setStepStatusById(id, newState);
 
     setState(() {
       currStep = value;
@@ -61,13 +70,13 @@ class MissionPageState extends State<MissionPage> {
       }
     }
     setState(() {
-        currStep = numStepsCompleted;
-        totalSteps = widget.mission.steps.length;
-        rewardAmount = widget.mission.ecoPoints;
-        stepDescription = widget.mission.description ?? "";
-      } 
-    );
-  }
+      currStep = numStepsCompleted;
+      totalSteps = widget.mission.steps.length;
+      rewardAmount = widget.mission.ecoPoints;
+      stepDescription = widget.mission.description ?? "";
+    } 
+  );
+}
   
   @override 
   Widget build (BuildContext context) {
@@ -101,77 +110,6 @@ class MissionPageState extends State<MissionPage> {
               onStepChange: updateStepsCompleted,
             ),
             const Padding(padding: EdgeInsets.only(top: 10)),
-            // Container(
-            //   margin: const EdgeInsets.all(25),
-            //   child: ElevatedButton(
-            //     style: ElevatedButton.styleFrom(
-            //       disabledBackgroundColor: Colors.grey,
-            //       backgroundColor: Colors.green,
-            //       foregroundColor: Colors.white
-            //     ),
-                
-            //     onPressed: currStep < totalSteps ? null : () {
-            //       Navigator.pop(context, 
-            //         {
-            //           "rewardAmount": rewardAmount,
-            //           "missionId": widget.mission.id
-            //         }
-            //       );
-            //     },
-            //     child: Text(
-            //       "Submit",
-            //       style: GoogleFonts.spaceGrotesk(
-            //         fontSize: 20
-            //       ),
-            //     ),
-            //   ),
-            // )
-            // Container(
-            //   margin: const EdgeInsets.symmetric(horizontal: 20),
-            //   child: Column(
-            //     children: [
-            //       Text(
-            //         "Mission Photos",
-            //         style: GoogleFonts.spaceGrotesk(
-            //           fontSize: 16,
-            //           decoration: TextDecoration.underline
-            //         ),
-            //       ),
-            //       const Padding(padding: EdgeInsets.only(top: 10)),
-            //       SingleChildScrollView(
-            //         scrollDirection: Axis.horizontal,
-            //         child: Row(
-            //           children: [
-            //             Container(
-            //               width: 50,
-            //               height: 50,
-            //               color: Colors.grey,
-            //             ),
-            //             const Padding(padding: EdgeInsets.only(right: 10)),    
-            //             Container(
-            //               width: 50,
-            //               height: 50,
-            //               color: Colors.grey,
-            //             ),
-            //             const Padding(padding: EdgeInsets.only(right: 10)),
-            //             Container(
-            //               width: 50,
-            //               height: 50,
-            //               decoration: const BoxDecoration(
-            //                 color: Colors.grey
-            //               ),
-            //               child: const Icon(
-            //                 Icons.add,
-            //                 size: 50,
-            //               ),
-            //             )
-            //           ],
-            //         ),
-            //       ),
-            //       const Padding(padding: EdgeInsets.only(top: 20))
-            //     ],
-            //   ),
-            // )
           ],
         ),
       )

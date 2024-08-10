@@ -51,7 +51,6 @@ class MissionTabState extends State<MissionTab> {
                 isReloadingTab = true;
               });
               regenerateMission(widget.mission.id, widget.parentProject.id).then((result) {
-                logger.info(result);
                 widget.onRefreshCallback();
                 setState(() {
                   isReloadingTab = false;
