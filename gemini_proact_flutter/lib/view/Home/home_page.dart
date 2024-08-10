@@ -15,9 +15,33 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentPageIndex = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 0), () {
+        setState(() {
+          isLoading = false;
+        });
+      });
+    });
+  }
   
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(),
+          )
+        )
+      );
+    }
+
     // Build a Form widget using the _formKey created above.
     return Scaffold(
       bottomNavigationBar: NavigationBar(

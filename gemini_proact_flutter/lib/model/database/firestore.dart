@@ -5,7 +5,6 @@ import 'package:gemini_proact_flutter/model/database/question.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gemini_proact_flutter/view/root.dart';
 import 'package:logging/logging.dart' show Logger;
 
 final logger = Logger('firestore');
@@ -158,6 +157,11 @@ Future<void> setStepStatusById (String missionId, bool status) async {
     .update({'status': newStatus});
 }
 
+Future<MissionEntity?> getMissionById (String missionId) async {
+  DocumentSnapshot<MissionEntity> missionQuery = await missionsRef.doc(missionId).get();
+  return missionQuery.data();
+}
+
 Future<void> completeMissionById (String missionId) async {
   missionsRef
     .doc(missionId)
@@ -254,19 +258,37 @@ Future<void> fetchAllUserProjects({ProactUser? user, int depth = 0}) async {
 // Add this method to update user interests
 final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> updateUserInterests(List<String> newInterests) async {
-    try {
-      User? currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        String userId = currentUser.uid;
-        await db.collection('User').doc(userId).update({
-          'interests': newInterests,
-        });
-        logger.fine('User interests updated successfully.');
-      } else {
-        logger.warning('No user is currently signed in.');
-      }
-    } catch (e) {
-      logger.severe('Error updating user interests: $e');
+Future<void> updateUserInterests(List<String> newInterests) async {
+  try {
+    User? currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      String userId = currentUser.uid;
+      await db.collection('User').doc(userId).update({
+        'interests': newInterests,
+      });
+      logger.fine('User interests updated successfully.');
+    } else {
+      logger.warning('No user is currently signed in.');
     }
+  } catch (e) {
+    logger.severe('Error updating user interests: $e');
   }
+}
+
+Future<void> updateUserOccupation(String occupation) async {
+  logger.info(occupation);
+  try {
+    User? currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      String userId = currentUser.uid;
+      await db.collection("User").doc(userId).update({
+        'occupation': occupation
+      });
+      logger.fine('User occupation updated successfully.');
+    } else {
+      logger.warning('No user is currently signed in.');
+    }
+  } catch (e) {
+    logger.severe('Error updating user interests: $e');
+  }
+}

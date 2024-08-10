@@ -1,12 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/model/database/user.dart';
+import 'package:gemini_proact_flutter/model/backend/backend_controller.dart';
 import 'package:gemini_proact_flutter/view/Auth/login_signup_page.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/onboarding_form.dart';
 import 'package:gemini_proact_flutter/view/home/home_page.dart';
-import 'package:gemini_proact_flutter/view/profile/profile.dart';
 import 'package:logging/logging.dart' show Logger;
-import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser, getUserActiveProjects;
 import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show registerGoogleUser;
 
 final logger = Logger((AuthPage).toString());
@@ -40,18 +39,41 @@ class AuthPageState extends State<AuthPage> {
                         MaterialPageRoute(builder: (context) => OnboardingForm(user: newUser))
                       );
                     });
-                } else if (!possibleUser.onboarded) {
+                  return;
+                }
+
+                // At this point, there is a user created for this account
+                if (!possibleUser.onboarded) {
                   Navigator.push(
                     context, 
                     MaterialPageRoute(builder: (context) => OnboardingForm(user: possibleUser))
                   );
-                } else {
-                  logger.info("To home page");
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => HomePage(user: possibleUser!))
-                  );
-                }
+                  return;
+                } 
+
+                // At this point, the user has completed their initial onboarding
+                getUserActiveProjects(user: possibleUser).then((activeMissions) {
+                  if (activeMissions == null || activeMissions.isEmpty) {
+                    // No active missions -> Need to regenerate missions
+                    generateWeeklyProjects().then((result) { 
+                      logger.info("Generated new active missions");
+                      // Need to regen user because now the snapshot is updated
+                      getUser().then((userWithMissions) {
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => HomePage(user: userWithMissions))
+                        );
+                      });
+                    });
+                  } else {
+                    // Successful Onboarding + Has Active Missions
+                    logger.info("To home page");
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (context) => HomePage(user: possibleUser))
+                    );
+                  } 
+                });
               })
               .catchError((e) => throw ErrorDescription('$e'));
             return const Center(

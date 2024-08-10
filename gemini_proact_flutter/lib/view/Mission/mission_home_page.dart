@@ -1,12 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUserActiveProjects, completeMissionById, getUserWeeklyEcoPoints;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUserActiveProjects, completeMissionById, getUserWeeklyEcoPoints, getMissionById;
 import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity;
 import 'package:gemini_proact_flutter/view/Mission/components/home_card.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/weekly_missions_tab_view.dart';
 import 'package:logging/logging.dart' show Logger;
 
@@ -26,27 +23,45 @@ class MissionHomePageState extends State<MissionHomePage> {
   List<MissionEntity> activeMissions = [];
   int currEcoPoints = 0;
   int currLevel = 1;
+  bool isLoading = true;
   void updateStatistics(int points) {
     int ecoPoints = currEcoPoints + points;
-    if (ecoPoints < 0) {
-      ecoPoints = 0;
+    logger.info(ecoPoints);
+    setState(() {
+      currEcoPoints = ecoPoints % 100;
+      currLevel = ecoPoints ~/ 100 + 1;
+    });
+  }
+  void refreshMission () async {
+    List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 2);
+    int ecoPoints = await getUserWeeklyEcoPoints(widget.user);
+    if (missions == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
     }
     setState(() {
+      activeMissions = missions;
       currEcoPoints = ecoPoints;
       currLevel = ecoPoints ~/ 100 + 1;
+      isLoading = false;
     });
   }
   void getUserMissions () async {
     List<MissionEntity>? missions = await getUserActiveProjects(user: widget.user, depth: 2);
     int ecoPoints = await getUserWeeklyEcoPoints(widget.user);
     if (missions == null) {
+      setState(() {
+        isLoading = false;
+      });
       return;
     }
-
     setState(() {
       activeMissions = missions;
       currEcoPoints = ecoPoints;
       currLevel = ecoPoints ~/ 100 + 1;
+      isLoading = false;
     });
   }
   @override
@@ -60,9 +75,10 @@ class MissionHomePageState extends State<MissionHomePage> {
   void onSubmit(Map<String, dynamic> submissionDetails) {
     // Update points
     int rewardAmount = submissionDetails["rewardAmount"];
+    int newValue = currEcoPoints + rewardAmount;
     setState(() {
       currEcoPoints += rewardAmount;
-      currLevel = currEcoPoints ~/ 100;
+      currLevel = newValue ~/ 100 + 1;
     });
 
     // Complete mission on Firebase
@@ -72,39 +88,34 @@ class MissionHomePageState extends State<MissionHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const SafeArea(
+        child: Center(
+          child: CircularProgressIndicator(),
+        ) 
+      );
+    }
+
     return SafeArea(
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Text(
-                widget.user.username, 
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500
-                )),
-              ProactLogo(size: 22),
-              IconButton(
-                onPressed: () {
-                  // TODO: Add onPressed functionality for whatever this does
-                }, 
-                icon: const Icon(
-                  Icons.menu,
-                  size: 35,
-                )
-              )
-            ],
-          ),
-          const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
-          HomeCard(
-            currentEcoPoints: currEcoPoints, 
-            currentLevel: currLevel
-          ),
-          const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
-          WeeklyMissionsTabView(missions: activeMissions, callback: onSubmit, stepCallback: updateStatistics, ecoPoints: currEcoPoints, level: currLevel),
-          const SizedBox(height: 10)
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ProactLogo(size: 26)
+              ],
+            ),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 10, 0, 0)),
+            HomeCard(
+              currentEcoPoints: currEcoPoints, 
+              currentLevel: currLevel
+            ),
+            const Padding(padding: EdgeInsets.fromLTRB(0, 20, 0, 0)),
+            WeeklyMissionsTabView(missions: activeMissions, callback: onSubmit, stepCallback: updateStatistics, ecoPoints: currEcoPoints, level: currLevel, onRefreshCallback: refreshMission),
+            const SizedBox(height: 10)
+          ],
+        ),
       )
     );
   }

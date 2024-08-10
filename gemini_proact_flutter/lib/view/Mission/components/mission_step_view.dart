@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gemini_proact_flutter/view/Mission/components/mission_step_tab.dart';
 import 'package:gemini_proact_flutter/model/database/mission.dart' show MissionEntity, MissionStatus;
-import 'package:gemini_proact_flutter/model/database/firestore.dart' show setStepStatusById;
 import 'package:logging/logging.dart' show Logger;
 
 final logger = Logger((MissionStepView).toString());
 
 class MissionStepView extends StatefulWidget {
   final List<MissionEntity> steps;
-  final void Function(bool) onStepChange;
+  final void Function(bool, String) onStepChange;
   const MissionStepView({super.key, required this.steps, required this.onStepChange});
   
   @override
@@ -25,7 +24,7 @@ class MissionStepViewState extends State<MissionStepView> {
 
   void onCheckboxPress (bool status, String missionId, int index) {
     widget.steps[index].status = status ? MissionStatus.done : MissionStatus.notStarted;
-    widget.onStepChange(status);
+    widget.onStepChange(status, missionId);
   }
 
   @override
@@ -50,7 +49,7 @@ class MissionStepViewState extends State<MissionStepView> {
                   initCheckState: widget.steps[i].status.name == "done",           
                   onCheckboxPress: onCheckboxPress,   
                 ),
-                const Padding(padding: EdgeInsets.only(top: 10)),  
+              const Padding(padding: EdgeInsets.only(top: 10)),  
             ],
           )
         ),

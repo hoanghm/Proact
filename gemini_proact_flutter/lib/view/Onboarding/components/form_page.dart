@@ -7,7 +7,8 @@ import 'package:gemini_proact_flutter/view/home/home_page.dart';
 import 'package:gemini_proact_flutter/view/Onboarding/components/form_text_field.dart';
 import 'package:gemini_proact_flutter/view/brand/proact_logo.dart';
 import 'package:gemini_proact_flutter/view/onboarding/components/form_next_button.dart';
-import 'package:gemini_proact_flutter/model/database/firestore.dart' show getOnboardingQuestions, updateUser;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show getOnboardingQuestions, updateUser, getUser;
+import 'package:gemini_proact_flutter/model/backend/backend_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart' show Logger;
 
@@ -24,6 +25,7 @@ class FormPage extends StatefulWidget {
 }
 
 class FormPageState extends State<FormPage> {
+  bool isSubmitting = false;
   final _formKey = GlobalKey<FormState>();
   /// Static form fields
   final List<Map<String, dynamic>> _staticFields = [
@@ -70,6 +72,9 @@ class FormPageState extends State<FormPage> {
   @override
   Widget build (BuildContext context) {
     void validateFormFields() {
+      setState(() {
+        isSubmitting = true;
+      });
       Map<String, Object> formSubmission = {
         "email": widget.user.email, 
         "questionnaire": widget.user.questionnaire, 
@@ -109,16 +114,26 @@ class FormPageState extends State<FormPage> {
       if (_formKey.currentState!.validate()) {
         updateUser(formSubmission, questionSubmission, widget.user.questionnaire)
           .then((possibleUser) {
-            Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (context) => Scaffold(
-                body: HomePage(user: possibleUser!,)
-              ))
-            );   
+            generateWeeklyProjects().then((result) { 
+              logger.info("Generated new active missions");
+              getUser().then((userWithMissions) {
+                setState(() {
+                  isSubmitting = false;
+                });
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => HomePage(user: userWithMissions))
+                );
+              });
+            });
           }); 
       }
     }
     
+    if (isSubmitting) {
+      return const SafeArea(child: Center(child: CircularProgressIndicator()));
+    }
+
     return SafeArea(
       child: SingleChildScrollView (
         padding: const EdgeInsets.all(20),

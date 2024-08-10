@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gemini_proact_flutter/model/database/user.dart' show ProactUser;
 import 'package:gemini_proact_flutter/model/auth/login_signup.dart' show signOutUser;
-import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser, updateUser, updateUserInterests;
+import 'package:gemini_proact_flutter/model/database/firestore.dart' show getUser, updateUserOccupation, updateUserInterests;
 
 class Profile extends StatefulWidget {
   final ProactUser user;
@@ -35,7 +35,7 @@ class ProfileState extends State<Profile> with AutomaticKeepAliveClientMixin {
       body: FutureBuilder<ProactUser?>(
         future: userFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -52,7 +52,6 @@ class ProfileState extends State<Profile> with AutomaticKeepAliveClientMixin {
           return CustomScrollView(
             slivers: [
               _buildAppBar(userData),
-              SliverToBoxAdapter(child: _buildProfileHeader(userData)),
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
@@ -71,11 +70,27 @@ class ProfileState extends State<Profile> with AutomaticKeepAliveClientMixin {
 
   Widget _buildAppBar(ProactUser user) {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 125,
       pinned: true,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(user.username, style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
+        title: Container(
+          margin: const EdgeInsets.only(left: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.username,
+                style: GoogleFonts.spaceGrotesk(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                user.email,
+                style: GoogleFonts.spaceGrotesk(fontSize: 16, color: Colors.black),
+              )
+            ],
+          ),
+        ),
         background: Image.network(
           "https://images.unsplash.com/photo-1579546929518-9e396f3cc809",
           fit: BoxFit.cover,
@@ -83,45 +98,13 @@ class ProfileState extends State<Profile> with AutomaticKeepAliveClientMixin {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.logout),
+          icon: const Icon(Icons.logout, size: 30),
           onPressed: () {
             Navigator.of(context).popUntil((route) => route.isFirst);
             signOutUser();
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildProfileHeader(ProactUser user) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: NetworkImage(
-              "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.username,
-                  style: GoogleFonts.spaceGrotesk(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  user.email,
-                  style: GoogleFonts.spaceGrotesk(fontSize: 16, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -202,10 +185,11 @@ class ProfileState extends State<Profile> with AutomaticKeepAliveClientMixin {
             TextButton(
               child: const Text('Save'),
               onPressed: () {
-                // TODO: Implement updating the user data
-                Navigator.of(context).pop();
-                setState(() {
-                  userFuture = _fetchUser(); // Refresh the user data
+                updateUserOccupation(newValue).then((_) {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    userFuture = _fetchUser(); // Refresh the user data
+                  });
                 });
               },
             ),
@@ -220,90 +204,96 @@ class ProfileState extends State<Profile> with AutomaticKeepAliveClientMixin {
     context: context,
     builder: (context) {
       List<String> newInterests = List.from(currentInterests);
-      return AlertDialog(
-        title: const Text('Edit Interests'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ...newInterests.map((interest) => ListTile(
-                title: Text(interest),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    setState(() {
-                      newInterests.remove(interest);
-                      
-                    });
-                  },
-                ),
-              )),
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text('Add new interest'),
-                onTap: () {
-                  // Implement adding a new interest
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      String newInterest = '';
-                      return AlertDialog(
-                        title: const Text('Add New Interest'),
-                        content: TextField(
-                          autofocus: true,
-                          onChanged: (value) {
-                            newInterest = value;
-                          },
-                          decoration: const InputDecoration(hintText: "Enter new interest"),
-                        ),
-                        actions: <Widget>[
-                          TextButton(
-                            child: const Text('Cancel'),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                          TextButton(
-                            child: const Text('Add'),
-                            onPressed: () {
-                              if (newInterest.isNotEmpty) {
-                                setState(() {
-                                  newInterests.add(newInterest);
-                                });
-                                Navigator.of(context).pop();
-                              }
-                            },
-                          ),
-                        ],
+      return StatefulBuilder(
+        builder: (context, setStateBuilder) {
+          return AlertDialog(
+            title: const Text('Edit Interests'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ...newInterests.map((interest) => ListTile(
+                    title: Text(interest),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        setStateBuilder(() {
+                          newInterests.remove(interest);
+                        });
+                      },
+                    ),
+                  )),
+                  ListTile(
+                    leading: const Icon(Icons.add),
+                    title: const Text('Add new interest'),
+                    onTap: () {
+                      // Implement adding a new interest
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          String newInterest = '';
+                          return AlertDialog(
+                            title: const Text('Add New Interest'),
+                            content: TextField(
+                              autofocus: true,
+                              onChanged: (value) {
+                                newInterest = value;
+                              },
+                              decoration: const InputDecoration(hintText: "Enter new interest"),
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('Cancel'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: const Text('Add'),
+                                onPressed: () {
+                                  if (newInterest.isNotEmpty) {
+                                    setStateBuilder(() {
+                                      newInterests.add(newInterest); // Refresh the user data
+                                    });
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
-                  );
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: const Text('Save'),
+                onPressed: () {
+                  // Implement updating the user's interests
+                  updateUserInterests(newInterests).then((_) {
+                    Navigator.of(context).pop();
+                    setStateBuilder(() {
+                      userFuture = _fetchUser(); // Refresh the user data
+                    });
+                    setState(() {
+                      userFuture = _fetchUser(); // Refresh the user data
+                    });
+                  });
                 },
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          TextButton(
-            child: const Text('Save'),
-            onPressed: () {
-              // Implement updating the user's interests
-              updateUserInterests(newInterests).then((_) {
-                Navigator.of(context).pop();
-                setState(() {
-                  userFuture = _fetchUser(); // Refresh the user data
-                });
-              });
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+          );
+          }
+        );
+      },
+    );
+  }
 }
